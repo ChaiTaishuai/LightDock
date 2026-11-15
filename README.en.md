@@ -2,7 +2,13 @@
 
 [简体中文](README.md) | English
 
-Light Dock is a lightweight Windows desktop dock with hover magnification, translucent styling and desktop icon management. The current mainline version is **0.3.0**.
+**Keep everyday shortcuts close and your desktop clear.**
+
+Light Dock is a lightweight Windows desktop launcher for apps, files, folders and the Recycle Bin. Keep frequent items in a primary row and organize additional material in expandable groups. Drag to organize, scroll to browse, and collapse the groups when you are finished.
+
+A crowded desktop makes familiar files harder to find; putting every shortcut in a single row makes the launcher unwieldy. Light Dock separates everyday favorites from grouped material you only need on demand. Original files stay in place, and managed desktop icons return when you exit.
+
+[Download latest](https://github.com/ChaiTaishuai/LightDock/releases/latest) · [All releases](https://github.com/ChaiTaishuai/LightDock/releases)
 
 ## Features
 
@@ -25,8 +31,19 @@ Run `./build.ps1` in Windows PowerShell. The build uses the Windows .NET Framewo
 
 All seven source snapshots compiled successfully during release preparation. Existing test reports are historical evidence, not a new interactive acceptance run. Other computers, mixed-DPI displays, actual sign-out/sign-in and antivirus compatibility remain unverified. These builds are unsigned; SHA-256 checksums identify files and do not certify publisher identity.
 
-## Versions
+## Version history
 
-Chronological development sequence: 0.1.0 → 0.2.0-beta.1 → beta.2 → beta.3 → beta.4 → 0.3.0-beta.1 → 0.3.0. Beta releases are experimental. Historical binaries may show 0.0.0.0 internally; archive names and release manifests identify their documented version.
+`main` shows the current mainline. Use the source links below or select **Tags** in the branch selector to inspect historical files. Historical tags preserve their original contents; expanded guides are maintained on the current mainline.
 
-No license has been selected in this workspace. Publication does not itself grant an open-source license.
+|Version|Focus|Guide|Source|Download|
+|---|---|---|---|---|
+|0.1.0|Single-level stable baseline|[Guide](docs/versions/v0.1.0.md)|[Source](https://github.com/ChaiTaishuai/LightDock/tree/v0.1.0)|[Download](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.1.0)|
+|0.2.0-beta.1|Expandable groups|[Guide](docs/versions/v0.2.0-beta.1.md)|[Source](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.1)|[Download](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.1)|
+|0.2.0-beta.2|Recycle Bin and drag-and-drop|[Guide](docs/versions/v0.2.0-beta.2.md)|[Source](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.2)|[Download](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.2)|
+|0.2.0-beta.3|Event-driven Recycle Bin refresh|[Guide](docs/versions/v0.2.0-beta.3.md)|[Source](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.3)|[Download](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.3)|
+|0.2.0-beta.4|Hover information cards|[Guide](docs/versions/v0.2.0-beta.4.md)|[Source](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.4)|[Download](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.4)|
+|0.3.0-beta.1|Chinese and English UI|[Guide](docs/versions/v0.3.0-beta.1.md)|[Source](https://github.com/ChaiTaishuai/LightDock/tree/v0.3.0-beta.1)|[Download](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.3.0-beta.1)|
+|0.3.0|Current stable mainline|[Guide](docs/versions/v0.3.0.md)|[Source](https://github.com/ChaiTaishuai/LightDock/tree/v0.3.0)|[Download](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.3.0)|
+
+
+No license has been selected. Publication does not itself grant an open-source license.

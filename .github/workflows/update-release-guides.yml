@@ -1,0 +1,28 @@
+name: Refresh release guides
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/versions/**'
+      - '.github/workflows/update-release-guides.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update release descriptions without changing binaries or tags
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($file in Get-ChildItem docs/versions/v*.md) {
+            $tag = $file.BaseName
+            $body = (Get-Content $file.FullName -Raw).Replace('(../../README.md)', '(https://github.com/ChaiTaishuai/LightDock#readme)')
+            $path = Join-Path $env:RUNNER_TEMP ($tag + '.md')
+            $body | Set-Content $path -Encoding utf8
+            gh release edit $tag --repo $env:GITHUB_REPOSITORY --notes-file $path
+            if ($LASTEXITCODE -ne 0) { throw "Cannot update $tag" }
+          }

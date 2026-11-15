@@ -1,8 +1,19 @@
-# Light Dock v0.3.0
+# Light Dock
 
 [English](README.en.md) | 简体中文
 
-当前主线：**v0.3.0，未签名 Windows x64 版本**。程序入口 `dist/LightDock.exe`。下载请访问 [GitHub Releases](https://github.com/ChaiTaishuai/LightDock/releases)。
+**把常用入口放在手边，让桌面回归清爽。**
+
+Light Dock 是一款面向 Windows 的轻量桌面图标栏。它把常用程序、文件、文件夹和回收站集中在一级入口，把更多资料收进可展开的二级分组。你可以通过拖放整理项目、按用途创建分组，在需要时展开浏览，用完后收起。
+
+桌面文件越来越多时，找一个常用入口往往要扫视整屏；全部塞进一排启动栏，又会让图标栏越拉越长。Light Dock 用“常用入口 + 按需展开的资料分组”分担这两种需求。收纳保留原文件的位置，退出时恢复桌面图标，便于尝试和回退。
+
+- **常用的放前面**：一级最多 12 个图标，点击直达。
+- **更多的按用途收纳**：二级分组支持拖放、排序与滚动。
+- **需要时展开，不用时收起**：让资料入口保持可达，减少桌面视觉拥挤。
+- **保留自己的习惯**：原文件不搬家，中英界面可切换，外观和悬停提示可调整。
+
+[下载最新版](https://github.com/ChaiTaishuai/LightDock/releases/latest) · [全部版本](https://github.com/ChaiTaishuai/LightDock/releases)
 
 ## 使用
 
@@ -31,12 +42,19 @@ Windows 11 x64，或 Windows 10 1607 及以上 x64 且已安装 .NET Framework 4
 
 此构建 **未进行 Authenticode 签名**，不是“已认证无病毒”版本。没有为发布包添加杀毒排除或防火墙放行规则。SHA-256 校验值用于比对发布文件，不等同于可信发布者签名。本地测试不代表所有 Windows 版本与杀毒产品的通过认证。
 
-## 版本与回退
+## 历史版本与下载
 
-- 主线源码：`src`；构建：`build.ps1`。
-- 原 v0.1.0 主线源码保存在 Git 历史及对应版本标签。
-- 各 beta 版本通过对应版本标签与 Releases 获取；运行前先退出当前版本。
-- 本地可沿用 beta 的配置副本，正式 ZIP 不含个人数据。
+`main` 展示当前主线。点击下表的“源码”查看对应版本的完整文件，点击“下载”获取可运行程序。GitHub 页面左上角的分支选择器也可切换到 **Tags**。历史标签保留发布时的文件；补充的详细指南维护在当前主线。
+
+|版本|主要变化|详细指南|源码|下载|
+|---|---|---|---|---|
+|0.1.0|单层稳定基线|[说明](docs/versions/v0.1.0.md)|[源码](https://github.com/ChaiTaishuai/LightDock/tree/v0.1.0)|[下载](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.1.0)|
+|0.2.0-beta.1|二级分组|[说明](docs/versions/v0.2.0-beta.1.md)|[源码](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.1)|[下载](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.1)|
+|0.2.0-beta.2|回收站与拖放改进|[说明](docs/versions/v0.2.0-beta.2.md)|[源码](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.2)|[下载](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.2)|
+|0.2.0-beta.3|回收站事件刷新|[说明](docs/versions/v0.2.0-beta.3.md)|[源码](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.3)|[下载](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.3)|
+|0.2.0-beta.4|悬停信息卡|[说明](docs/versions/v0.2.0-beta.4.md)|[源码](https://github.com/ChaiTaishuai/LightDock/tree/v0.2.0-beta.4)|[下载](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.2.0-beta.4)|
+|0.3.0-beta.1|中英文界面|[说明](docs/versions/v0.3.0-beta.1.md)|[源码](https://github.com/ChaiTaishuai/LightDock/tree/v0.3.0-beta.1)|[下载](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.3.0-beta.1)|
+|0.3.0|当前稳定主线|[说明](docs/versions/v0.3.0.md)|[源码](https://github.com/ChaiTaishuai/LightDock/tree/v0.3.0)|[下载](https://github.com/ChaiTaishuai/LightDock/releases/tag/v0.3.0)|
 
 ## 验证和构建
 
