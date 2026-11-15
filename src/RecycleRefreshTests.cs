@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +8,7 @@ namespace AsterDock
 {
     internal static class RecycleRefreshTests
     {
+        [System.Runtime.InteropServices.DllImport("shell32.dll")] private static extern void SHChangeNotify(int evt,uint flags,IntPtr item1,IntPtr item2);
         private static Image Find(DependencyObject parent,string target)
         {
             var border=parent as Border;
@@ -29,11 +30,11 @@ namespace AsterDock
                     if(++ticks>120) throw new Exception("Timed out waiting for live recycle icon update, phase="+phase);
                     var image=Find(window,ShellDrop.RecycleBin); var regular=Find(window,"explorer.exe");
                     if(image==null || image.Source==null || regular==null || regular.Source==null)return;
-                    if(phase==0) {previous=image.Source;ordinary=regular.Source;phase=1;}
+                    if(phase==0) {previous=image.Source;ordinary=regular.Source; SHChangeNotify(0x8000,3,IntPtr.Zero,IntPtr.Zero);phase=1;}
                     else if(phase==1 && !ReferenceEquals(previous,image.Source)) {
                         if(!ReferenceEquals(ordinary,regular.Source))throw new Exception("Ordinary icon unexpectedly refreshed");
                         config.Transfer(bin,"_",null); window.SetState(DockState.Visible); window.TestExpand(true); phase=2;
-                    } else if(phase==2) {previous=image.Source; window.TestExpand(false);phase=3;}
+                    } else if(phase==2) {previous=image.Source; window.TestExpand(false); SHChangeNotify(0x8000,3,IntPtr.Zero,IntPtr.Zero);phase=3;}
                     else if(phase==3 && !ReferenceEquals(previous,image.Source)) {
                         window.TestExpand(true);
                         if(bin.GroupId!="_")throw new Exception("Group changed during refresh");

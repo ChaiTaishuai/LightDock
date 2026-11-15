@@ -95,6 +95,7 @@ namespace AsterDock
                 Native.SetWindowLongPtr(hwnd, -20, new IntPtr(Native.GetWindowLongPtr(hwnd, -20).ToInt64() | 0x80));
                 HwndSource.FromHwnd(hwnd).AddHook(WindowMessage);
                 HwndSource.FromHwnd(hwnd).CompositionTarget.BackgroundColor = Colors.Transparent;
+                StartRecycleNotifications();
                 desktopGesture = new DesktopGesture(Dispatcher, ToggleHidden);
                 if (Native.RegisterHotKey(hwnd, 1, 0x4003, 0x20)) HotkeyLabel = "Ctrl + Alt + Space";
                 else if (Native.RegisterHotKey(hwnd, 1, 0x4003, 0x44)) HotkeyLabel = "Ctrl + Alt + D（备用快捷键）";
@@ -108,7 +109,7 @@ namespace AsterDock
                 {
                     if (state == DockState.Visible) Native.PlaceAtDesktop(hwnd);
                     desktopItems.Update(Config.Items);
-                    if (maintenanceTick % 8 == 0) RefreshRecycleIcons();
+                    if (!RecycleNotificationsAvailable && maintenanceTick % 120 == 0) RefreshRecycleIcons();
                     if (desktopItems.LastError != null) WarnShell(desktopItems.LastError);
                 }
             };
@@ -120,6 +121,7 @@ namespace AsterDock
 
         private IntPtr WindowMessage(IntPtr w, int msg, IntPtr wp, IntPtr lp, ref bool handled)
         {
+            if (HandleRecycleMessage(msg)) return IntPtr.Zero;
             if (msg == 0x312 && wp.ToInt32() == 1) { TogglePeek(); handled = true; }
             // WPF owns WM_DPICHANGED and its suggested rectangle. Reflow only after
             // the framework has updated its device transform; do not apply DPI twice.

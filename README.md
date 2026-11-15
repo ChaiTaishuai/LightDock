@@ -1,6 +1,6 @@
-# Light Dock v0.2.0-beta.2
+# Light Dock v0.2.0-beta.3
 
-回收站与桌面恢复修复 / Recycle Bin and desktop recovery fixes
+回收站事件刷新 / Shell event refresh
 
 此包来自当前保留的历史源码快照，已重新编译；不含个人设置。先退出其他版本，完整解压后运行 bin/LightDock.exe。运行要求：Windows x64 和 .NET Framework 4.8。未签名；跨电脑及混合 DPI 尚未完成验收。内部产品版本：0.0.0.0。旧版本不包含后续所有修复，建议日常使用 0.3.0。
 
