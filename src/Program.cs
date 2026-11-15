@@ -1,0 +1,73 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Threading;
+using System.Windows;
+
+namespace AsterDock
+{
+    internal static class Program
+    {
+        internal const string MutexName = "Local\\AsterDock.Desktop.Singleton";
+        [STAThread]
+        public static int Main(string[] args)
+        {
+            Trace("Start, argument count=" + args.Length);
+            if (args.Length > 0 && args[0] == "--self-test") return Tests.Run();
+            if (args.Length > 0 && args[0] == "--verify-recovery") return Tests.VerifyRecovery();
+            if (args.Length > 1 && args[0] == "--guard")
+            {
+                try { Process.GetProcessById(int.Parse(args[1])).WaitForExit(); } catch (ArgumentException) { }
+                using (Mutex recovery = new Mutex(false, MutexName))
+                {
+                    bool owned = false;
+                    try { try { owned = recovery.WaitOne(5000); } catch (AbandonedMutexException) { owned = true; }
+                        if (owned) ShellRecovery.RecoverAll(); }
+                    finally { if (owned) recovery.ReleaseMutex(); }
+                }
+                return 0;
+            }
+            using (Mutex mutex = new Mutex(false, MutexName))
+            {
+                bool owned;
+                try { owned = mutex.WaitOne(0); } catch (AbandonedMutexException) { owned = true; }
+                if (!owned) {
+                    if (args.Length > 0 && (args[0] == "--window-test" || args[0] == "--glass-preview" || args[0] == "--recovery-fixture")) return 2;
+                    try { using (EventWaitHandle signal = EventWaitHandle.OpenExisting("Local\\AsterDock.OpenSettings")) signal.Set(); } catch (WaitHandleCannotBeOpenedException) { }
+                    return 0;
+                }
+                try
+                {
+                    ShellRecovery.RecoverAll();
+                    ProcessStartInfo guard = new ProcessStartInfo(Process.GetCurrentProcess().MainModule.FileName, "--guard " + Process.GetCurrentProcess().Id);
+                    guard.UseShellExecute = false; guard.CreateNoWindow = true; guard.WindowStyle = ProcessWindowStyle.Hidden;
+                    Process.Start(guard);
+                    if (args.Length > 0 && args[0] == "--window-test") return Tests.RunWindowTest();
+                    if (args.Length > 0 && args[0] == "--recovery-fixture") return Tests.RunRecoveryFixture();
+                    if (args.Length > 0 && args[0] == "--glass-preview") return Tests.RunGlassPreview();
+                    Trace("Creating application");
+                    Application app = new Application(); app.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                    app.DispatcherUnhandledException += delegate(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
+                        MessageBox.Show("Aster Dock 遇到错误，将退出并恢复桌面图标。\n" + e.Exception.Message, "Aster Dock");
+                        e.Handled = true; app.Shutdown(1);
+                    };
+                    DockWindow window = new DockWindow(Settings.Load());
+                    Trace("Window constructed");
+                    EventWaitHandle openSettings = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\AsterDock.OpenSettings");
+                    System.Windows.Threading.DispatcherTimer signals = new System.Windows.Threading.DispatcherTimer();
+                    signals.Interval = TimeSpan.FromMilliseconds(300);
+                    signals.Tick += delegate { if (openSettings.WaitOne(0)) window.OpenSettings(); }; signals.Start();
+                    if (args.Length > 0 && args[0] == "--settings") window.Loaded += delegate { window.OpenSettings(); };
+                    app.Exit += delegate { window.Cleanup(); };
+                    int result = app.Run(window); signals.Stop(); openSettings.Dispose(); Trace("Application exited: " + result); return result;
+                }
+                catch (Exception ex) { ShellRecovery.RecoverAll(); MessageBox.Show(ex.ToString(), "Aster Dock 启动失败"); return 1; }
+                finally { mutex.ReleaseMutex(); }
+            }
+        }
+        private static void Trace(string message)
+        {
+            try { File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup.log"), DateTime.Now.ToString("O") + " " + message + Environment.NewLine); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
+    }
+}
