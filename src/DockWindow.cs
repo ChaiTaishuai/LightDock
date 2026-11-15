@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -15,7 +15,7 @@ namespace AsterDock
 {
     internal enum DockState { Visible, Hidden, Peek }
 
-    internal sealed class DockWindow : Window
+    internal sealed partial class DockWindow : Window
     {
         internal readonly Settings Config;
         private readonly Border plate = new Border();
@@ -52,9 +52,9 @@ namespace AsterDock
 
         internal DockWindow(Settings config)
         {
-            Config = config;
+            Config = config; Config.Normalize();
             desktopItems = new DesktopIconProjection(Dispatcher);
-            Title = "Aster Dock"; WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
+            Title = "Light Dock · 分组试验版"; WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
             // Use a DWM glass surface, not a WS_EX_LAYERED bitmap: layered WPF windows
             // can accept an accent policy while silently suppressing its backdrop blur.
             AllowsTransparency = false; Background = Brushes.Transparent; ShowInTaskbar = false;
@@ -71,14 +71,24 @@ namespace AsterDock
             plate.Child = row; Content = plate;
             plate.SizeChanged += delegate { Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(ApplyGlass)); };
             AllowDrop = true;
-            DragOver += delegate(object sender, DragEventArgs e) { e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Link : DragDropEffects.None; e.Handled = true; };
-            Drop += delegate(object sender, DragEventArgs e) { if (e.Data.GetDataPresent(DataFormats.FileDrop)) AddPaths((string[])e.Data.GetData(DataFormats.FileDrop)); e.Handled = true; };
+            DragOver += delegate(object sender, DragEventArgs e) {
+                bool files = e.Data.GetDataPresent(DataFormats.FileDrop);
+                e.Effects = files ? DragDropEffects.Link : DragDropEffects.None;
+                if (files) HighlightExternalDrop(e.GetPosition(this));
+                e.Handled = true;
+            };
+            DragLeave += delegate(object sender, DragEventArgs e) { if (!Inside(this,e.GetPosition(this))) ClearDropHighlight(); };
+            Drop += delegate(object sender, DragEventArgs e) {
+                string group = DropGroup(e.GetPosition(this)); ClearDropHighlight();
+                if (e.Data.GetDataPresent(DataFormats.FileDrop)) AddPaths((string[])e.Data.GetData(DataFormats.FileDrop), group == "" ? null : group);
+                e.Handled = true;
+            };
             PreviewMouseLeftButtonDown += OnMouseDown;
             PreviewMouseLeftButtonUp += OnMouseUp;
             PreviewMouseMove += OnMouseMove;
-            LostMouseCapture += delegate { if (dragged && !cleaned) FinishDrag(); if (itemDragging) { itemDragging = false; draggedItem = null; dragStart = null; } };
+            LostMouseCapture += delegate { if (dragged && !cleaned) FinishDrag(); if (itemDragging) { itemDragging = false; draggedItem = null; dragStart = null; Cursor=null; ClearDropHighlight(); } };
             MouseLeave += delegate { hover = null; StartAnimation(); };
-            PreviewKeyDown += delegate(object sender, KeyEventArgs e) { if (e.Key == Key.Escape && state == DockState.Peek) { SetState(DockState.Hidden); e.Handled = true; } };
+            PreviewKeyDown += delegate(object sender, KeyEventArgs e) { if(e.Key == Key.Escape && itemDragging) { itemDragging=false; draggedItem=null; dragStart=null; Cursor=null; ReleaseMouseCapture(); ClearDropHighlight(); e.Handled=true; return; } if (e.Key == Key.Escape && state == DockState.Peek) { SetState(DockState.Hidden); e.Handled = true; } };
             ContextMenu = BuildMenu();
             SourceInitialized += delegate {
                 hwnd = new WindowInteropHelper(this).Handle;
@@ -129,8 +139,8 @@ namespace AsterDock
         }
         private void CreateTray()
         {
-            tray = new Forms.NotifyIcon(); tray.Text = "Aster Dock · 双击打开设置";
-            tray.Icon = System.Drawing.SystemIcons.Application;
+            tray = new Forms.NotifyIcon(); tray.Text = "Light Dock · 双击打开设置";
+            tray.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Process.GetCurrentProcess().MainModule.FileName) ?? System.Drawing.SystemIcons.Application;
             Forms.ContextMenuStrip menu = new Forms.ContextMenuStrip();
             menu.Items.Add("显示 Dock", null, delegate { SetState(DockState.Visible); });
             menu.Items.Add("隐藏 Dock、桌面图标与任务栏", null, delegate { SetState(DockState.Hidden); });
@@ -145,6 +155,7 @@ namespace AsterDock
             AddMenu(menu, "添加应用或文件…", PickFiles);
             AddMenu(menu, "添加文件夹…", delegate { using (Forms.FolderBrowserDialog picker = new Forms.FolderBrowserDialog()) { if (picker.ShowDialog() == Forms.DialogResult.OK) AddPaths(new string[] { picker.SelectedPath }); } });
             AddMenu(menu, "导入桌面快捷方式", ImportDesktop);
+            AddMenu(menu, "新建分组…", delegate { EditGroup(null); });
             menu.Items.Add(new Separator());
             AddMenu(menu, "设置外观与布局…", OpenSettings);
             AddMenu(menu, "回到顶部居中", delegate { Config.Movable = false; Config.HasRelativePosition = false; Config.X = Config.Y = double.NaN; Apply(); });
@@ -167,7 +178,7 @@ namespace AsterDock
         private void WarnShell(string message)
         {
             if(shellWarning==message) return; shellWarning=message;
-            if(tray!=null) tray.ShowBalloonTip(6000,"Aster Dock · 桌面同步未完成",message,Forms.ToolTipIcon.Warning);
+            if(tray!=null) tray.ShowBalloonTip(6000,"Light Dock · 桌面同步未完成",message,Forms.ToolTipIcon.Warning);
         }
         private void ApplyGlass()
         {
@@ -188,7 +199,7 @@ namespace AsterDock
             }
         }
         internal void Save()
-        { try { Config.Save(); } catch (Exception ex) { MessageBox.Show("无法保存设置：" + ex.Message, "Aster Dock"); } }
+        { try { Config.Save(); } catch (Exception ex) { MessageBox.Show("无法保存设置：" + ex.Message, "Light Dock"); } }
 
         private void Render()
         {
@@ -197,9 +208,10 @@ namespace AsterDock
             plate.Background = new LinearGradientBrush(
                 Color.FromArgb((byte)(255 * Math.Min(1, Config.BackgroundOpacity * 1.15)), 250, 252, 255),
                 Color.FromArgb((byte)(255 * Config.BackgroundOpacity * .85), 229, 237, 246), 90);
-            row.Orientation = Config.Vertical ? Orientation.Vertical : Orientation.Horizontal;
+            row.Orientation = Orientation.Vertical;
             // A bounded scroll viewport keeps large libraries reachable on small displays.
-            StackPanel items = new StackPanel { Orientation = row.Orientation };
+            StackPanel items = new StackPanel { Orientation = Orientation.Horizontal };
+            PrepareGroups(items);
             double extent = Config.IconSize * Config.Magnification + 22;
             foreach (DockItem item in Config.Items)
             {
@@ -218,18 +230,13 @@ namespace AsterDock
                 AddMenu(itemMenu, "向前移动", delegate { MoveItem(captured, -1); });
                 AddMenu(itemMenu, "向后移动", delegate { MoveItem(captured, 1); });
                 AddMenu(itemMenu, "从 Dock 移除并恢复桌面图标", delegate { Config.Items.Remove(captured); Apply(); });
+                AddMenu(itemMenu, "新建分组…", delegate { EditGroup(null); });
                 AddMenu(itemMenu, "Dock 设置…", OpenSettings);
-                tile.ContextMenu = itemMenu; items.Children.Add(tile);
+                tile.ContextMenu = itemMenu; GroupPanel(item.GroupId).Children.Add(tile);
             }
-            ScrollViewer scroll = new ScrollViewer { Content = items, CanContentScroll = false, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden };
-            viewport = scroll;
-            if (Config.Vertical) scroll.Width = extent;
-            else scroll.Height = extent;
-            UpdateViewport();
-            scroll.PreviewMouseWheel += delegate(object sender, MouseWheelEventArgs e) { if (Config.Vertical) scroll.ScrollToVerticalOffset(scroll.VerticalOffset - e.Delta); else scroll.ScrollToHorizontalOffset(scroll.HorizontalOffset - e.Delta); e.Handled = true; };
-            row.Children.Add(scroll);
-            if (Config.Items.Count == 0) row.Children.Add(new TextBlock { Text = "将文件或文件夹拖到这里", Foreground = Brushes.SlateGray, Margin = new Thickness(18) });
+            FinishGroups(items, extent);
         }
+
         private void LoadIcon(string target, Image image, TextBlock placeholder)
         {
             IconLoader.Load(target).ContinueWith(delegate(System.Threading.Tasks.Task<ImageSource> task) {
@@ -252,11 +259,9 @@ namespace AsterDock
         }
         private void UpdateViewport()
         {
-            if (viewport == null) return;
-            DisplayArea area = TargetDisplay();
-            Size available = DisplayGeometry.Viewport(area.WorkPx, area.Scale);
-            viewport.MaxWidth = available.Width; viewport.MaxHeight = available.Height;
+            ResizeGroups(false);
         }
+
         private void Place()
         {
             if (!IsLoaded || placing || hwnd == IntPtr.Zero) return;
@@ -292,12 +297,13 @@ namespace AsterDock
                 // Collapse a double-click to one launch; desktop gestures own visibility.
                 dragStart = null; ReleaseMouseCapture(); e.Handled = true; return;
             }
+            if (IsToggleSource(e.OriginalSource as DependencyObject)) return;
             dragStart = Displays.Cursor; dragged = false; draggedItem = null; itemDragging = false;
             Point localPoint = e.GetPosition(this);
             foreach (FrameworkElement tile in tiles)
             {
                 Point local = TranslatePoint(localPoint, tile);
-                if (local.X >= 0 && local.X < tile.ActualWidth && local.Y >= 0 && local.Y < tile.ActualHeight)
+                if (local.X >= 0 && local.X < tile.ActualWidth && local.Y >= 0 && local.Y < tile.ActualHeight && DropGroup(e.GetPosition(this)) == (((DockItem)tile.Tag).GroupId ?? ""))
                 { draggedItem = (DockItem)tile.Tag; break; }
             }
             Rect rect = Displays.WindowRect(hwnd);
@@ -313,7 +319,7 @@ namespace AsterDock
             if (Math.Abs(delta.X) < Displays.GetSystemMetricsForDpi(68,dpi) && Math.Abs(delta.Y) < Displays.GetSystemMetricsForDpi(69,dpi) && !dragged) return;
             if (draggedItem != null)
             {
-                itemDragging = true; clickTimer.Stop(); pendingClick = null; Cursor = Cursors.Hand; e.Handled = true; return;
+                itemDragging = true; clickTimer.Stop(); pendingClick = null; Cursor = Cursors.Hand; UpdateGroupDrag(e.GetPosition(this)); e.Handled = true; return;
             }
             if (!Config.Movable) return;
             dragged = true; clickTimer.Stop(); pendingClick = null;
@@ -326,6 +332,8 @@ namespace AsterDock
             {
                 DockItem item = draggedItem; Point screen = Displays.Cursor;
                 itemDragging = false; draggedItem = null; dragStart = null; Cursor = null; ReleaseMouseCapture();
+                if (DropIntoGroup(item, e.GetPosition(this))) { e.Handled = true; return; }
+                ClearDropHighlight();
                 string parent = null;
                 try { if (Path.IsPathRooted(item.Target)) parent = Path.GetDirectoryName(Path.GetFullPath(item.Target)); } catch (Exception) { }
                 bool desktopItem = string.Equals(parent, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), StringComparison.OrdinalIgnoreCase) || string.Equals(parent, Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), StringComparison.OrdinalIgnoreCase);
@@ -341,7 +349,7 @@ namespace AsterDock
             foreach (FrameworkElement tile in tiles)
             {
                 Point local = TranslatePoint(p, tile);
-                if (local.X >= 0 && local.X < tile.ActualWidth && local.Y >= 0 && local.Y < tile.ActualHeight)
+                if (local.X >= 0 && local.X < tile.ActualWidth && local.Y >= 0 && local.Y < tile.ActualHeight && DropGroup(e.GetPosition(this)) == (((DockItem)tile.Tag).GroupId ?? ""))
                 { DockItem item = (DockItem)tile.Tag; QueueClick(delegate { Launch(item); }); e.Handled = true; return; }
             }
         }
@@ -361,7 +369,7 @@ namespace AsterDock
             foreach (FrameworkElement tile in tiles)
             {
                 Point center = tile.TranslatePoint(new Point(tile.ActualWidth / 2, tile.ActualHeight / 2), this);
-                double target = hover.HasValue ? Layout.Magnify(Config.Vertical ? hover.Value.Y - center.Y : hover.Value.X - center.X, Config.IconSize * 2.5, Config.Magnification) : 1;
+                double target = hover.HasValue && Math.Abs(hover.Value.Y-center.Y)<tile.ActualHeight/2 ? Layout.Magnify(hover.Value.X-center.X, Config.IconSize * 2.5, Config.Magnification) : 1;
                 double next = scales[tile] + (target - scales[tile]) * .24;
                 if (Math.Abs(next - target) < .002) next = target; else settled = false;
                 scales[tile] = next;
@@ -376,7 +384,7 @@ namespace AsterDock
         {
             clickTimer.Stop(); pendingClick = null;
             state = value;
-            if (state == DockState.Hidden) { StopAnimation(); Hide(); }
+            if (state == DockState.Hidden) { ClearDropHighlight(); StopAnimation(); Hide(); }
             else { Render(); Show(); Place(); Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(ApplyGlass)); }
             UpdateDesktop();
             if (state == DockState.Visible) Native.PlaceAtDesktop(hwnd);
@@ -385,7 +393,7 @@ namespace AsterDock
         private void Launch(DockItem item)
         {
             try { Process.Start(new ProcessStartInfo(item.Target) { UseShellExecute = true }); if (state == DockState.Peek) SetState(DockState.Hidden); }
-            catch (Exception ex) { MessageBox.Show("无法打开「" + item.Name + "」\n" + ex.Message, "Aster Dock"); }
+            catch (Exception ex) { MessageBox.Show("无法打开「" + item.Name + "」\n" + ex.Message, "Light Dock"); }
         }
         private void MoveItem(DockItem item, int delta)
         { int index = Config.Items.IndexOf(item); int next = index + delta; if (next < 0 || next >= Config.Items.Count) return; Config.Items.RemoveAt(index); Config.Items.Insert(next, item); Apply(); }
@@ -394,13 +402,14 @@ namespace AsterDock
             Microsoft.Win32.OpenFileDialog picker = new Microsoft.Win32.OpenFileDialog { Title = "添加应用、快捷方式或文件", Multiselect = true, Filter = "所有文件|*.*", CheckFileExists = true };
             if (picker.ShowDialog(this) == true) AddPaths(picker.FileNames);
         }
-        private void AddPaths(string[] paths)
+        private void AddPaths(string[] paths) { AddPaths(paths, null); }
+        private void AddPaths(string[] paths, string group)
         {
             foreach (string path in paths)
             {
                 if (!File.Exists(path) && !Directory.Exists(path)) continue;
                 if (Config.Items.Exists(delegate(DockItem i) { return string.Equals(i.Target, path, StringComparison.OrdinalIgnoreCase); })) continue;
-                Config.Items.Add(new DockItem(Path.GetFileNameWithoutExtension(path), path));
+                Config.AddGroupedItem(new DockItem(Path.GetFileNameWithoutExtension(path), path), group);
             }
             Apply();
         }
@@ -417,7 +426,7 @@ namespace AsterDock
         internal void Cleanup()
         {
             if (cleaned) return; cleaned = true;
-            maintenance.Stop(); clickTimer.Stop(); StopAnimation();
+            ClearDropHighlight(); maintenance.Stop(); clickTimer.Stop(); StopAnimation();
             if (desktopGesture != null) desktopGesture.Dispose();
             Native.UnregisterHotKey(hwnd, 1);
             foreach(Action restore in new Action[] { taskbar.Dispose,desktopItems.Dispose,desktop.Dispose })

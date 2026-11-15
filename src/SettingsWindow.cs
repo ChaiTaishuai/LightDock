@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -17,7 +17,7 @@ namespace AsterDock
         internal SettingsWindow(DockWindow owner, string hotkey)
         {
             dock = owner;
-            Title = "Aster Dock · 设置"; Width = 480; Height = 720; MinHeight = 500;
+            Title = "Light Dock · 设置"; Width = 480; Height = 720; MinHeight = 500;
             WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = new SolidColorBrush(Color.FromRgb(16, 22, 35));
             Foreground = Ink; FontFamily = new FontFamily("Microsoft YaHei UI"); FontSize = 13; Topmost = true;
             UseLayoutRounding = true;
@@ -25,7 +25,7 @@ namespace AsterDock
             SourceInitialized += delegate { HwndSource.FromHwnd(new WindowInteropHelper(this).Handle).AddHook(DisplayMessage); };
             body.Margin = new Thickness(28, 24, 28, 24);
             Content = new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-            body.Children.Add(new TextBlock { Text = "ASTER / DOCK", Foreground = new SolidColorBrush(Color.FromRgb(133, 200, 255)), FontSize = 12 });
+            body.Children.Add(new TextBlock { Text = "LIGHT / DOCK", Foreground = new SolidColorBrush(Color.FromRgb(133, 200, 255)), FontSize = 12 });
             body.Children.Add(new TextBlock { Text = "让桌面，轻一点。", FontSize = 27, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 8) });
             Note("所有更改即时生效，自动保存。将常用应用留在触手可及的位置。");
             Section("外观");
@@ -37,7 +37,8 @@ namespace AsterDock
             Slider("悬停放大", 1, 2, dock.Config.Magnification, delegate(double v) { dock.Config.Magnification = v; }, delegate(double v) { return v.ToString("0.00") + " ×"; });
             Section("布局");
             Check("自由拖拽（关闭后回到顶部居中）", dock.Config.Movable, delegate(bool v) { dock.Config.Movable = v; });
-            Check("纵向排列", dock.Config.Vertical, delegate(bool v) { dock.Config.Vertical = v; });
+            Note("分组试验版采用横向布局，一级菜单最多 12 个图标。");
+            Slider("二级菜单最大可见行数", 2, 8, dock.Config.VisibleRows, delegate(double v) { dock.Config.VisibleRows = (int)Math.Round(v); }, delegate(double v) { return Math.Round(v).ToString() + " 行"; });
             Note("开启自由拖拽后，按住图标之间的背板移动 Dock。将来自桌面的图标拖到桌面空白处，可将其移出 Dock 并恢复原位置。图标过多时，滚动鼠标滚轮浏览。");
             Section("桌面与呼出");
             Check("运行期间始终隐藏桌面原生图标", dock.Config.HideDesktopIcons, delegate(bool v) { dock.Config.HideDesktopIcons = v; });
@@ -93,7 +94,7 @@ namespace AsterDock
             DockPanel labels = new DockPanel();
             TextBlock number = new TextBlock { Text = format(value), Foreground = Muted, HorizontalAlignment = HorizontalAlignment.Right };
             DockPanel.SetDock(number, Dock.Right); labels.Children.Add(number); labels.Children.Add(new TextBlock { Text = label }); body.Children.Add(labels);
-            Slider slider = new Slider { Minimum = min, Maximum = max, Value = value, Margin = new Thickness(0, 8, 0, 15) };
+            Slider slider = new Slider { IsSnapToTickEnabled = label == "二级菜单最大可见行数", TickFrequency = 1, Minimum = min, Maximum = max, Value = value, Margin = new Thickness(0, 8, 0, 15) };
             slider.ValueChanged += delegate { update(slider.Value); number.Text = format(slider.Value); dock.Apply(); }; body.Children.Add(slider);
         }
     }

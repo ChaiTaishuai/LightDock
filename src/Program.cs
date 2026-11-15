@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -33,8 +33,9 @@ namespace AsterDock
                 try { owned = mutex.WaitOne(0); } catch (AbandonedMutexException) { owned = true; }
                 if (!owned) {
                     if (args.Length > 0 && (args[0] == "--window-test" || args[0] == "--glass-preview" || args[0] == "--recovery-fixture")) return 2;
-                    try { using (EventWaitHandle signal = EventWaitHandle.OpenExisting("Local\\AsterDock.OpenSettings")) signal.Set(); } catch (WaitHandleCannotBeOpenedException) { }
-                    return 0;
+                    MessageBox.Show("请先退出正在运行的稳定版或试验版 Dock，再启动分组试验版。两个版本不能同时接管桌面。", "Light Dock 分组试验版");
+                    return 2;
+
                 }
                 try
                 {
@@ -42,13 +43,14 @@ namespace AsterDock
                     ProcessStartInfo guard = new ProcessStartInfo(Process.GetCurrentProcess().MainModule.FileName, "--guard " + Process.GetCurrentProcess().Id);
                     guard.UseShellExecute = false; guard.CreateNoWindow = true; guard.WindowStyle = ProcessWindowStyle.Hidden;
                     Process.Start(guard);
+                    if (args.Length > 0 && args[0] == "--groups-test") return GroupTests.Run();
                     if (args.Length > 0 && args[0] == "--window-test") return Tests.RunWindowTest();
                     if (args.Length > 0 && args[0] == "--recovery-fixture") return Tests.RunRecoveryFixture();
                     if (args.Length > 0 && args[0] == "--glass-preview") return Tests.RunGlassPreview();
                     Trace("Creating application");
                     Application app = new Application(); app.ShutdownMode = ShutdownMode.OnMainWindowClose;
                     app.DispatcherUnhandledException += delegate(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
-                        MessageBox.Show("Aster Dock 遇到错误，将退出并恢复桌面图标。\n" + e.Exception.Message, "Aster Dock");
+                        MessageBox.Show("Light Dock 遇到错误，将退出并恢复桌面图标。\n" + e.Exception.Message, "Light Dock");
                         e.Handled = true; app.Shutdown(1);
                     };
                     DockWindow window = new DockWindow(Settings.Load());
@@ -61,7 +63,7 @@ namespace AsterDock
                     app.Exit += delegate { window.Cleanup(); };
                     int result = app.Run(window); signals.Stop(); openSettings.Dispose(); Trace("Application exited: " + result); return result;
                 }
-                catch (Exception ex) { ShellRecovery.RecoverAll(); MessageBox.Show(ex.ToString(), "Aster Dock 启动失败"); return 1; }
+                catch (Exception ex) { ShellRecovery.RecoverAll(); MessageBox.Show(ex.ToString(), "Light Dock 启动失败"); return 1; }
                 finally { mutex.ReleaseMutex(); }
             }
         }

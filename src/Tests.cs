@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Xml.Serialization;
 using System.Windows;
@@ -145,13 +145,13 @@ namespace AsterDock
                         Check(window.CurrentState == DockState.Visible, "Double click transition restores normal state");
                         foreach (System.Collections.Generic.KeyValuePair<IntPtr, bool> pair in before) Check(Native.IsWindowVisible(pair.Key) == pair.Value, "Original icon visibility restored");
                         foreach(var pair in taskbars) Check(Native.IsWindowVisible(pair.Key)==pair.Value,"Original taskbar visibility restored");
-                        s.Vertical = true;
+                        s.Vertical = false;
                         // Rebuild without saving a test configuration to the user's settings file.
                         window.SetState(DockState.Visible);
                     }
                     else if (phase == 4)
                     {
-                        Check(window.ActualHeight > window.ActualWidth, "Vertical window geometry");
+                        Check(window.ActualWidth > window.ActualHeight, "Grouped trial retains horizontal primary layout");
                         Check(Native.HasSystemCornerConfiguration(window.Handle), "System corner configuration survives vertical resize");
                         s.Movable = true; s.HasRelativePosition = true; s.PositionMonitor = "DISCONNECTED-MONITOR"; s.PositionX = 1; s.PositionY = 1;
                         window.SetState(DockState.Visible);
@@ -287,13 +287,13 @@ namespace AsterDock
                 s.Items.Add(null); s.Items.Add(new DockItem("bad", "")); s.Normalize();
                 Check(s.Radius == 24 && s.BackgroundOpacity == .05 && s.IconSize == 72 && s.Magnification == 1.55, "Invalid config bounded");
                 Check(s.Items.Count == 5, "Invalid entries removed");
-                s.Movable = true; s.Vertical = true; s.X = -1000; s.Y = 100;
+                s.Movable = true; s.Vertical = false; s.X = -1000; s.Y = 100;
                 s.HasRelativePosition = true; s.PositionMonitor = "DISPLAY2"; s.PositionX = .75; s.PositionY = .25;
                 XmlSerializer serializer = new XmlSerializer(typeof(Settings));
                 using (MemoryStream stream = new MemoryStream())
                 {
                     serializer.Serialize(stream, s); stream.Position = 0; Settings roundtrip = (Settings)serializer.Deserialize(stream);
-                    Check(roundtrip.X == -1000 && roundtrip.Vertical && roundtrip.Movable && roundtrip.Items[0].Target == "explorer.exe", "Settings roundtrip");
+                    Check(roundtrip.X == -1000 && !roundtrip.Vertical && roundtrip.Movable && roundtrip.Items[0].Target == "explorer.exe", "Settings roundtrip");
                     Check(roundtrip.HasRelativePosition && roundtrip.PositionMonitor == "DISPLAY2" && roundtrip.PositionX == .75 && roundtrip.PositionY == .25, "Monitor anchor persists through XML");
                 }
                 // Instantiate and measure real WPF views without hiding any desktop icons.

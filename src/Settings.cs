@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
@@ -9,11 +9,12 @@ namespace AsterDock
     {
         public string Name { get; set; }
         public string Target { get; set; }
+        public string GroupId { get; set; }
         public DockItem() { }
         public DockItem(string name, string target) { Name = name; Target = target; }
     }
 
-    public class Settings
+    public partial class Settings
     {
         public double Radius = 24;
         public double BackgroundOpacity = .26;
@@ -31,7 +32,7 @@ namespace AsterDock
         public double PositionX = .5;
         public double PositionY;
         public List<DockItem> Items = new List<DockItem>();
-        public static string Folder { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AsterDock"); } }
+        public static string Folder { get { return Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "data")); } }
         public static string FilePath { get { return Path.Combine(Folder, "settings.xml"); } }
         public static Settings Defaults()
         {
@@ -57,6 +58,7 @@ namespace AsterDock
             if (PositionMonitor == null) PositionMonitor = "";
             if (Items == null) Items = new List<DockItem>();
             Items.RemoveAll(delegate(DockItem i) { return i == null || string.IsNullOrWhiteSpace(i.Target); });
+            NormalizeGroups();
             foreach (DockItem i in Items) if (string.IsNullOrWhiteSpace(i.Name)) i.Name = Path.GetFileName(i.Target);
         }
         public static double Clamp(double v, double min, double max, double fallback)
@@ -75,7 +77,7 @@ namespace AsterDock
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("配置无法读取，将使用默认设置。原文件将保留为 settings.invalid.xml。\n" + ex.Message, "Aster Dock");
+                System.Windows.MessageBox.Show("配置无法读取，将使用默认设置。原文件将保留为 settings.invalid.xml。\n" + ex.Message, "Light Dock");
                 if (File.Exists(FilePath)) File.Copy(FilePath, Path.Combine(Folder, "settings.invalid.xml"), true);
                 return Defaults();
             }
