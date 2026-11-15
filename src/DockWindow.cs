@@ -72,15 +72,15 @@ namespace AsterDock
             plate.SizeChanged += delegate { Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(ApplyGlass)); };
             AllowDrop = true;
             DragOver += delegate(object sender, DragEventArgs e) {
-                bool files = e.Data.GetDataPresent(DataFormats.FileDrop);
+                bool files = ShellDrop.Accepts(e.Data);
                 e.Effects = files ? DragDropEffects.Link : DragDropEffects.None;
                 if (files) HighlightExternalDrop(e.GetPosition(this));
                 e.Handled = true;
             };
             DragLeave += delegate(object sender, DragEventArgs e) { if (!Inside(this,e.GetPosition(this))) ClearDropHighlight(); };
             Drop += delegate(object sender, DragEventArgs e) {
-                string group = DropGroup(e.GetPosition(this)); ClearDropHighlight();
-                if (e.Data.GetDataPresent(DataFormats.FileDrop)) AddPaths((string[])e.Data.GetData(DataFormats.FileDrop), group == "" ? null : group);
+                Point point = e.GetPosition(this); string group = DropGroup(point); DockItem before = InsertionBefore(group,point); ClearDropHighlight();
+                if (ShellDrop.Accepts(e.Data)) AddPaths(ShellDrop.Read(e.Data), group == "" ? null : group, before);
                 e.Handled = true;
             };
             PreviewMouseLeftButtonDown += OnMouseDown;
@@ -108,6 +108,7 @@ namespace AsterDock
                 {
                     if (state == DockState.Visible) Native.PlaceAtDesktop(hwnd);
                     desktopItems.Update(Config.Items);
+                    if (maintenanceTick % 8 == 0) RefreshRecycleIcons();
                     if (desktopItems.LastError != null) WarnShell(desktopItems.LastError);
                 }
             };
@@ -153,6 +154,7 @@ namespace AsterDock
         {
             ContextMenu menu = new ContextMenu();
             AddMenu(menu, "添加应用或文件…", PickFiles);
+            AddMenu(menu, "添加回收站", delegate { AddPaths(new string[] { ShellDrop.RecycleBin }); });
             AddMenu(menu, "添加文件夹…", delegate { using (Forms.FolderBrowserDialog picker = new Forms.FolderBrowserDialog()) { if (picker.ShowDialog() == Forms.DialogResult.OK) AddPaths(new string[] { picker.SelectedPath }); } });
             AddMenu(menu, "导入桌面快捷方式", ImportDesktop);
             AddMenu(menu, "新建分组…", delegate { EditGroup(null); });
@@ -203,7 +205,7 @@ namespace AsterDock
 
         private void Render()
         {
-            hover = null; StopAnimation(); tiles.Clear(); scales.Clear(); row.Children.Clear();
+            hover = null; StopAnimation(); recycleIcons.Clear(); tiles.Clear(); scales.Clear(); row.Children.Clear();
             plate.CornerRadius = new CornerRadius(0);
             plate.Background = new LinearGradientBrush(
                 Color.FromArgb((byte)(255 * Math.Min(1, Config.BackgroundOpacity * 1.15)), 250, 252, 255),
@@ -239,6 +241,10 @@ namespace AsterDock
 
         private void LoadIcon(string target, Image image, TextBlock placeholder)
         {
+            if (ShellDrop.IsRecycleBin(target)) {
+                var binding = new RecycleIconBinding { Image=image, Placeholder=placeholder };
+                recycleIcons.Add(binding); RefreshRecycleIcon(binding); return;
+            }
             IconLoader.Load(target).ContinueWith(delegate(System.Threading.Tasks.Task<ImageSource> task) {
                 if (Dispatcher.HasShutdownStarted) return;
                 Dispatcher.BeginInvoke(new Action(delegate {
@@ -336,7 +342,7 @@ namespace AsterDock
                 ClearDropHighlight();
                 string parent = null;
                 try { if (Path.IsPathRooted(item.Target)) parent = Path.GetDirectoryName(Path.GetFullPath(item.Target)); } catch (Exception) { }
-                bool desktopItem = string.Equals(parent, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), StringComparison.OrdinalIgnoreCase) || string.Equals(parent, Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), StringComparison.OrdinalIgnoreCase);
+                bool desktopItem = ShellDrop.IsRecycleBin(item.Target) || string.Equals(parent, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), StringComparison.OrdinalIgnoreCase) || string.Equals(parent, Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), StringComparison.OrdinalIgnoreCase);
                 if (desktopItem && DesktopGesture.IsDesktopBackground(new DesktopGesture.Point { X = (int)screen.X, Y = (int)screen.Y })) { Config.Items.Remove(item); Apply(); }
                 e.Handled = true; return;
             }
@@ -392,7 +398,7 @@ namespace AsterDock
         }
         private void Launch(DockItem item)
         {
-            try { Process.Start(new ProcessStartInfo(item.Target) { UseShellExecute = true }); if (state == DockState.Peek) SetState(DockState.Hidden); }
+            try { Process.Start(ShellDrop.IsRecycleBin(item.Target) ? new ProcessStartInfo("explorer.exe", "shell:" + ShellDrop.RecycleBin) { UseShellExecute = true } : new ProcessStartInfo(item.Target) { UseShellExecute = true }); if (state == DockState.Peek) SetState(DockState.Hidden); }
             catch (Exception ex) { MessageBox.Show("无法打开「" + item.Name + "」\n" + ex.Message, "Light Dock"); }
         }
         private void MoveItem(DockItem item, int delta)
@@ -403,13 +409,16 @@ namespace AsterDock
             if (picker.ShowDialog(this) == true) AddPaths(picker.FileNames);
         }
         private void AddPaths(string[] paths) { AddPaths(paths, null); }
-        private void AddPaths(string[] paths, string group)
+        private void AddPaths(string[] paths, string group) { AddPaths(paths, group, null); }
+        private void AddPaths(string[] paths, string group, DockItem before)
         {
             foreach (string path in paths)
             {
-                if (!File.Exists(path) && !Directory.Exists(path)) continue;
+                if (!ShellDrop.IsRecycleBin(path) && !File.Exists(path) && !Directory.Exists(path)) continue;
                 if (Config.Items.Exists(delegate(DockItem i) { return string.Equals(i.Target, path, StringComparison.OrdinalIgnoreCase); })) continue;
-                Config.AddGroupedItem(new DockItem(Path.GetFileNameWithoutExtension(path), path), group);
+                DockItem added = new DockItem(ShellDrop.IsRecycleBin(path) ? "回收站" : Path.GetFileNameWithoutExtension(path), path);
+                Config.AddGroupedItem(added, group);
+                if (before != null && before.GroupId == added.GroupId) Config.Transfer(added, added.GroupId, before);
             }
             Apply();
         }
@@ -426,7 +435,7 @@ namespace AsterDock
         internal void Cleanup()
         {
             if (cleaned) return; cleaned = true;
-            ClearDropHighlight(); maintenance.Stop(); clickTimer.Stop(); StopAnimation();
+            ClearDropHighlight(); recycleIcons.Clear(); maintenance.Stop(); clickTimer.Stop(); StopAnimation();
             if (desktopGesture != null) desktopGesture.Dispose();
             Native.UnregisterHotKey(hwnd, 1);
             foreach(Action restore in new Action[] { taskbar.Dispose,desktopItems.Dispose,desktop.Dispose })

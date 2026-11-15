@@ -192,11 +192,23 @@ namespace AsterDock
         {
             string group=DropGroup(point);
             if(group==null) return false;
-            DockItem before=null;
-            foreach(var tile in tiles) if(Inside(tile,point)) { before=(DockItem)tile.Tag; break; }
+            DockItem before=InsertionBefore(group,point);
             ClearDropHighlight();
             if(Config.Transfer(item,group,before)) Apply();
             return true; // a full primary row rejects the transfer without removing the item
+        }
+        private DockItem InsertionBefore(string group,Point point)
+        {
+            if(group==null || !groupPanels.ContainsKey(group)) return null;
+            WrapPanel panel=groupPanels[group];
+            Point local=TranslatePoint(point,panel);
+            foreach(UIElement child in panel.Children)
+            {
+                FrameworkElement tile=child as FrameworkElement; if(tile==null) continue;
+                Point origin=tile.TranslatePoint(new Point(),panel);
+                if(local.Y < origin.Y+tile.ActualHeight && (local.Y < origin.Y || local.X < origin.X+tile.ActualWidth/2)) return tile.Tag as DockItem;
+            }
+            return null;
         }
         private void EditGroup(DockGroup group)
         {

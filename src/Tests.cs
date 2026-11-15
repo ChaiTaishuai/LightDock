@@ -81,9 +81,9 @@ namespace AsterDock
             window.Loaded += delegate { timer.Start(); };
             window.Show(); return app.Run();
         }
-        internal static int RunWindowTest()
+        internal static int RunWindowTest(bool recycle = false)
         {
-            string report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "window-test-results.txt");
+            string report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, recycle ? "recycle-window-test-results.txt" : "window-test-results.txt");
             System.Windows.Application app = new System.Windows.Application();
             Settings s = Settings.Defaults();
             DockWindow window = new DockWindow(s);
@@ -171,9 +171,9 @@ namespace AsterDock
                         work.Inflate(12*Displays.WindowScale(panelHandle),12*Displays.WindowScale(panelHandle));
                         Check(work.Contains(rect), "Settings window fits current work area");
                         panel.Close(); panel = null;
-                        borrowed=ShellDesktop.Read().Find(delegate(DesktopEntry entry) { return File.Exists(entry.Path) && entry.Path.EndsWith(".lnk",StringComparison.OrdinalIgnoreCase); });
+                        borrowed=ShellDesktop.Read().Find(delegate(DesktopEntry entry) { return recycle ? ShellDrop.IsRecycleBin(entry.Path) : File.Exists(entry.Path) && entry.Path.EndsWith(".lnk",StringComparison.OrdinalIgnoreCase); });
                         Check(borrowed!=null,"Existing desktop shortcut available for reversible projection test");
-                        borrowedAttributes=File.GetAttributes(borrowed.Path);
+                        if(!recycle) borrowedAttributes=File.GetAttributes(borrowed.Path);
                         s.Items.Clear(); s.Items.Add(new DockItem("Projection test",borrowed.Path));
                         window.DesktopItems.Update(s.Items);
                     }
@@ -184,7 +184,7 @@ namespace AsterDock
                         Check(window.DesktopItems.HiddenCount==1,"Only the added desktop shortcut is projected into Dock");
                         DesktopEntry after=ShellDesktop.Read().Find(delegate(DesktopEntry entry) { return entry.Path==borrowed.Path; });
                         Check(after!=null && after.Position==borrowed.Position,"Collected shortcut retains exact Shell position and identity");
-                        Check(File.Exists(borrowed.Path) && File.GetAttributes(borrowed.Path)==borrowedAttributes,"Collected shortcut file and attributes unchanged");
+                        Check(recycle || (File.Exists(borrowed.Path) && File.GetAttributes(borrowed.Path)==borrowedAttributes),"Collected shortcut file and attributes unchanged");
                         foreach(IntPtr list in Native.DesktopLists())
                         {
                             WindowRegions.Rect hole=WindowRegions.ItemBounds(list,new System.Collections.Generic.List<int>{after.Index})[0];

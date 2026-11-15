@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -18,6 +18,7 @@ namespace AsterDock
         [DllImport("gdi32.dll")] private static extern IntPtr ExtCreateRegion(IntPtr transform,uint size,byte[] data);
         [DllImport("user32.dll")] private static extern int GetWindowRgn(IntPtr window,IntPtr region);
         [DllImport("user32.dll")] private static extern int SetWindowRgn(IntPtr window,IntPtr region,bool redraw);
+        [DllImport("user32.dll")] private static extern bool RedrawWindow(IntPtr window,IntPtr rect,IntPtr region,uint flags);
         [DllImport("user32.dll")] internal static extern bool GetWindowRect(IntPtr window,out Rect rect);
         [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr window,ref System.Drawing.Point point);
         [DllImport("user32.dll")] private static extern IntPtr SendMessageTimeout(IntPtr window,uint message,IntPtr wp,IntPtr lp,uint flags,uint timeout,out IntPtr result);
@@ -57,6 +58,7 @@ namespace AsterDock
             IntPtr region = FromBytes(data);
             if (data != null && region == IntPtr.Zero) throw new InvalidOperationException("无法建立桌面显示区域。");
             if (SetWindowRgn(window,region,true) == 0) { if (region != IntPtr.Zero) DeleteObject(region); throw new InvalidOperationException("无法更新桌面显示区域。"); }
+            RedrawWindow(window,IntPtr.Zero,IntPtr.Zero,0x185); // invalidate, erase, all children, update now
             // On success USER owns the region.
         }
         internal static byte[] Exclude(IntPtr window,byte[] original,List<Rect> holes)
@@ -123,7 +125,8 @@ namespace AsterDock
         {
             HashSet<string> paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach(DockItem item in items)
-                if(item!=null && !string.IsNullOrEmpty(item.Target) && Path.IsPathRooted(item.Target))
+                if(item!=null && ShellDrop.IsRecycleBin(item.Target)) paths.Add(ShellDrop.RecycleBin);
+                else if(item!=null && !string.IsNullOrEmpty(item.Target) && Path.IsPathRooted(item.Target))
                     try { paths.Add(Path.GetFullPath(item.Target).TrimEnd(Path.DirectorySeparatorChar)); } catch(ArgumentException) { } catch(NotSupportedException) { }
             return paths;
         }
@@ -131,7 +134,12 @@ namespace AsterDock
         {
             if(disposed) return;
             HashSet<string> next = Paths(items);
-            if(!targets.SetEquals(next)) { targets=next; revision++; }
+            if(!targets.SetEquals(next)) {
+                targets=next; revision++;
+                // Restore synchronously before querying the new layout. A removed icon
+                // must not remain behind an old asynchronous projection mask.
+                RestoreOwned();
+            }
             Refresh();
         }
         private sealed class Snapshot
@@ -157,7 +165,7 @@ namespace AsterDock
                     if(disposed) { var ignored=task.Exception; return; }
                     if(version!=revision) { var ignored=task.Exception; Refresh(); return; }
                     try { if(task.IsFaulted) throw task.Exception.GetBaseException(); Apply(task.Result); LastError=null; }
-                    catch(Exception ex) { if(LastError!=ex.Message) ShellRecovery.Log(ex); LastError=ex.Message; }
+                    catch(Exception ex) { if(LastError!=ex.Message) ShellRecovery.Log(ex); LastError=ex.Message; RestoreOwned(); }
                 }));
             });
         }
@@ -173,8 +181,8 @@ namespace AsterDock
                 byte[] now=WindowRegions.Read(snapshot.Window);
                 if(record==null)
                 { record=snapshot.Identity; record.OriginalRegion=now; records.Add(record); }
-                else if(!WindowRegions.Equal(now,record.AppliedRegion) && !WindowRegions.Equal(now,record.PreviousRegion))
-                    record.OriginalRegion=now; // respect another desktop manager's new region
+                // The baseline is immutable for this ownership session. Explorer may
+                // normalize/change a live region; that must never become the baseline.
                 byte[] mask=WindowRegions.Exclude(snapshot.Window,record.OriginalRegion,snapshot.Holes);
                 if(!WindowRegions.Equal(now,mask))
                 {
@@ -198,9 +206,9 @@ namespace AsterDock
         private static void Restore(ShellWindowRecord record,List<IntPtr> current)
         {
             if(!ShellRecovery.Matches(record,current)) return;
-            IntPtr hwnd=new IntPtr(record.Handle); byte[] now=WindowRegions.Read(hwnd);
-            // Do not overwrite a region installed by another app after ours.
-            if(WindowRegions.Equal(now,record.AppliedRegion) || WindowRegions.Equal(now,record.PreviousRegion)) WindowRegions.Apply(hwnd,record.OriginalRegion);
+            IntPtr hwnd=new IntPtr(record.Handle);
+            // Identity is checked above. A changed mask must not silently skip recovery.
+            WindowRegions.Apply(hwnd,record.OriginalRegion);
         }
         internal static void Recover()
         {
@@ -209,11 +217,23 @@ namespace AsterDock
             foreach(ShellWindowRecord record in records) try { Restore(record,current); } catch(Exception ex) { pending.Add(record); ShellRecovery.Log(ex); }
             if(pending.Count>0) ShellRecovery.Write(FilePath,pending); else if(File.Exists(FilePath)) File.Delete(FilePath);
         }
+        private void RestoreOwned()
+        {
+            var current=Native.DesktopLists();
+            foreach(var record in records.ToArray())
+            {
+                Restore(record,current);
+                records.Remove(record);
+            }
+            HiddenCount=0;
+            if(File.Exists(FilePath)) File.Delete(FilePath);
+        }
         public void Dispose()
         {
-            if(disposed) return; disposed=true;
-            if(records.Count>0) Recover();
-            records.Clear(); HiddenCount=0;
+            if(disposed) return; disposed=true; revision++;
+            // Use the in-memory baseline on normal exit; the disk journal remains
+            // available to the guardian if restoration throws.
+            RestoreOwned();
         }
     }
 }

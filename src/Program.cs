@@ -32,7 +32,7 @@ namespace AsterDock
                 bool owned;
                 try { owned = mutex.WaitOne(0); } catch (AbandonedMutexException) { owned = true; }
                 if (!owned) {
-                    if (args.Length > 0 && (args[0] == "--window-test" || args[0] == "--glass-preview" || args[0] == "--recovery-fixture")) return 2;
+                    if (args.Length > 0 && (args[0] == "--recycle-test" || args[0] == "--recycle-data-test" || args[0] == "--groups-test" || args[0] == "--window-test" || args[0] == "--glass-preview" || args[0] == "--recovery-fixture")) return 2;
                     MessageBox.Show("请先退出正在运行的稳定版或试验版 Dock，再启动分组试验版。两个版本不能同时接管桌面。", "Light Dock 分组试验版");
                     return 2;
 
@@ -40,10 +40,18 @@ namespace AsterDock
                 try
                 {
                     ShellRecovery.RecoverAll();
+                    if (args.Length > 0 && args[0] == "--repair-desktop") {
+                        foreach(IntPtr list in Native.DesktopLists()) { WindowRegions.Apply(list,null); Native.ShowWindow(list,5); }
+                        return 0;
+                    }
                     ProcessStartInfo guard = new ProcessStartInfo(Process.GetCurrentProcess().MainModule.FileName, "--guard " + Process.GetCurrentProcess().Id);
                     guard.UseShellExecute = false; guard.CreateNoWindow = true; guard.WindowStyle = ProcessWindowStyle.Hidden;
                     Process.Start(guard);
+                    if (args.Length > 0 && args[0] == "--recycle-refresh-test") return RecycleRefreshTests.Run();
+                    if (args.Length > 0 && args[0] == "--projection-test") return ProjectionTests.Run();
                     if (args.Length > 0 && args[0] == "--groups-test") return GroupTests.Run();
+                    if (args.Length > 0 && args[0] == "--recycle-data-test") return RecycleTests.Run();
+                    if (args.Length > 0 && args[0] == "--recycle-test") return Tests.RunWindowTest(true);
                     if (args.Length > 0 && args[0] == "--window-test") return Tests.RunWindowTest();
                     if (args.Length > 0 && args[0] == "--recovery-fixture") return Tests.RunRecoveryFixture();
                     if (args.Length > 0 && args[0] == "--glass-preview") return Tests.RunGlassPreview();

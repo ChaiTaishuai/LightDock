@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -121,13 +121,22 @@ namespace AsterDock
             }, IntPtr.Zero);
             return result;
         }
+        [DllImport("shell32.dll", CharSet=CharSet.Unicode)] private static extern int SHParseDisplayName(string name, IntPtr context, out IntPtr pidl, uint flags, out uint attributes);
+        [DllImport("shell32.dll", CharSet=CharSet.Unicode)] private static extern IntPtr SHGetFileInfo(IntPtr pidl, uint attributes, out ShellInfo info, uint size, uint flags);
         internal static ImageSource Icon(string path)
         {
             ShellInfo info;
             if (!System.IO.Path.IsPathRooted(path) && path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                 path = System.IO.Path.Combine(Environment.GetFolderPath(path.Equals("explorer.exe", StringComparison.OrdinalIgnoreCase) ? Environment.SpecialFolder.Windows : Environment.SpecialFolder.System), path);
             // Ask only for the base system image index: no SHGFI_LINKOVERLAY/ADDOVERLAYS.
-            if (SHGetFileInfo(path, 0, out info, (uint)Marshal.SizeOf(typeof(ShellInfo)), 0x4000) == IntPtr.Zero) return null;
+            if(ShellDrop.IsRecycleBin(path))
+            {
+                IntPtr pidl; uint attributes;
+                if(SHParseDisplayName(path,IntPtr.Zero,out pidl,0,out attributes)<0) return null;
+                try { if(SHGetFileInfo(pidl,0,out info,(uint)Marshal.SizeOf(typeof(ShellInfo)),0x4008)==IntPtr.Zero) return null; }
+                finally { Marshal.FreeCoTaskMem(pidl); }
+            }
+            else if (SHGetFileInfo(path, 0, out info, (uint)Marshal.SizeOf(typeof(ShellInfo)), 0x4000) == IntPtr.Zero) return null;
             Guid iid = typeof(IImageList).GUID;
             IImageList list = null; IntPtr icon = IntPtr.Zero;
             try
