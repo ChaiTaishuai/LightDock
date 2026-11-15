@@ -1,0 +1,6 @@
+dist*/
+bin/
+obj/
+data/
+releases/
+*.user

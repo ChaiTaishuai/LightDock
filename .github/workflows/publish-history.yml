@@ -1,0 +1,24 @@
+name: Publish preserved releases
+on:
+  push:
+    branches: [main]
+    paths: ['release-history.json']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publish-preserved-releases
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build and publish in chronological order
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./publish-history.ps1
