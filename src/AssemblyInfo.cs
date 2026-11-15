@@ -5,3 +5,7 @@
 [assembly: System.Reflection.AssemblyTitle("Light Dock")]
 [assembly: System.Reflection.AssemblyProduct("Light Dock")]
 [assembly: System.Reflection.AssemblyDescription("Light Dock 分组试验版")]
+
+[assembly: System.Reflection.AssemblyVersion("0.2.0.4")]
+[assembly: System.Reflection.AssemblyFileVersion("0.2.0.4")]
+[assembly: System.Reflection.AssemblyInformationalVersion("0.2.0-beta.4")]

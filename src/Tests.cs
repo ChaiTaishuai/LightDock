@@ -165,6 +165,7 @@ namespace AsterDock
                     else if (phase == 6)
                     {
                         IntPtr panelHandle = new System.Windows.Interop.WindowInteropHelper(panel).Handle;
+                        Check((Native.GetWindowLongPtr(panelHandle,-20).ToInt64() & 8)==0,"Settings window is not topmost");
                         Check(Displays.IsPerMonitorV2(panelHandle), "Settings HWND is Per-Monitor V2");
                         Rect rect = Displays.WindowRect(panelHandle); Rect work = Displays.ForWindow(panelHandle).WorkPx;
                         // Standard resize borders may extend a few pixels beyond the visible frame.
@@ -244,6 +245,18 @@ namespace AsterDock
             string report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test-results.txt");
             try
             {
+                var delaySerializer=new XmlSerializer(typeof(Settings));
+                using(var oldXml=new MemoryStream(System.Text.Encoding.UTF8.GetBytes("<Settings />"))) {
+                    var oldSettings=(Settings)delaySerializer.Deserialize(oldXml); oldSettings.Normalize();
+                    Check(oldSettings.HoverDelaySeconds==1,"Old settings default to one second");
+                }
+                foreach(double value in new double[]{.5,1,1.4,2}) {
+                    var delaySettings=Settings.Defaults();delaySettings.HoverDelaySeconds=value;
+                    using(var data=new MemoryStream()) { delaySerializer.Serialize(data,delaySettings);data.Position=0;var restored=(Settings)delaySerializer.Deserialize(data);restored.Normalize();Check(restored.HoverDelaySeconds==value,"Hover delay survives save and restart"); }
+                }
+                var badDelay=Settings.Defaults();badDelay.HoverDelaySeconds=double.NaN;badDelay.Normalize();Check(badDelay.HoverDelaySeconds==1,"Invalid delay defaults safely");
+                badDelay.HoverDelaySeconds=5;badDelay.Normalize();Check(badDelay.HoverDelaySeconds==2,"Delay maximum enforced");
+                badDelay.HoverDelaySeconds=.1;badDelay.Normalize();Check(badDelay.HoverDelaySeconds==.5,"Delay minimum enforced");
                 TestDisplayGeometry();
                 var entries=ShellDesktop.Read();
                 Check(entries.Count>0,"Shell desktop identities readable without file modification");

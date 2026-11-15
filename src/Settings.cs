@@ -21,6 +21,7 @@ namespace AsterDock
         public bool BlurBackground = true;
         public int AppearanceVersion;
         public double IconSize = 44;
+        public double HoverDelaySeconds = 1.0;
         public double Magnification = 1.55;
         public bool Movable;
         public bool Vertical;
@@ -49,6 +50,7 @@ namespace AsterDock
         {
             Radius = Clamp(Radius, 0, 60, 24);
             BackgroundOpacity = Clamp(BackgroundOpacity, .05, 1, .26);
+            HoverDelaySeconds = Math.Round(Clamp(HoverDelaySeconds, .5, 2, 1)*10, MidpointRounding.AwayFromZero)/10;
             IconSize = Clamp(IconSize, 28, 72, 44);
             Magnification = Clamp(Magnification, 1, 2, 1.55);
             if (double.IsInfinity(X)) X = double.NaN;

@@ -83,6 +83,12 @@ namespace AsterDock
                 if (ShellDrop.Accepts(e.Data)) AddPaths(ShellDrop.Read(e.Data), group == "" ? null : group, before);
                 e.Handled = true;
             };
+            PreviewMouseDown += delegate { HideHoverCard(); };
+            PreviewMouseWheel += delegate { HideHoverCard(); };
+            DragEnter += delegate { HideHoverCard(); };
+            IsVisibleChanged += delegate { if(!IsVisible) HideHoverCard(); };
+            LocationChanged += delegate { HideHoverCard(); };
+            SizeChanged += delegate { HideHoverCard(); };
             PreviewMouseLeftButtonDown += OnMouseDown;
             PreviewMouseLeftButtonUp += OnMouseUp;
             PreviewMouseMove += OnMouseMove;
@@ -207,7 +213,7 @@ namespace AsterDock
 
         private void Render()
         {
-            hover = null; StopAnimation(); recycleIcons.Clear(); tiles.Clear(); scales.Clear(); row.Children.Clear();
+            HideHoverCard(); hover = null; StopAnimation(); recycleIcons.Clear(); tiles.Clear(); scales.Clear(); row.Children.Clear();
             plate.CornerRadius = new CornerRadius(0);
             plate.Background = new LinearGradientBrush(
                 Color.FromArgb((byte)(255 * Math.Min(1, Config.BackgroundOpacity * 1.15)), 250, 252, 255),
@@ -219,7 +225,8 @@ namespace AsterDock
             double extent = Config.IconSize * Config.Magnification + 22;
             foreach (DockItem item in Config.Items)
             {
-                Border tile = new Border { Width = extent, Height = extent, Background = Brushes.Transparent, CornerRadius = new CornerRadius(12), ToolTip = item.Name + "\n" + item.Target, Cursor = Cursors.Hand, Tag = item };
+                Border tile = new Border { Width = extent, Height = extent, Background = Brushes.Transparent, CornerRadius = new CornerRadius(12), Cursor = Cursors.Hand, Tag = item };
+                AttachHoverCard(tile, item);
                 Grid face = new Grid { Width = Config.IconSize, Height = Config.IconSize };
                 TextBlock placeholder = new TextBlock { Text = item.Target == "ms-settings:" ? "⚙" : "◇", FontSize = Config.IconSize * .8, Foreground = new SolidColorBrush(Color.FromRgb(49, 67, 89)), TextAlignment = TextAlignment.Center };
                 Image iconImage = new Image { Stretch = Stretch.Uniform, SnapsToDevicePixels = true };
@@ -437,6 +444,7 @@ namespace AsterDock
         internal void Cleanup()
         {
             if (cleaned) return; cleaned = true;
+            DisposeHoverCard(); StopRecycleNotifications();
             ClearDropHighlight(); recycleIcons.Clear(); maintenance.Stop(); clickTimer.Stop(); StopAnimation();
             if (desktopGesture != null) desktopGesture.Dispose();
             Native.UnregisterHotKey(hwnd, 1);

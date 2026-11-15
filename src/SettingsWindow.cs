@@ -19,7 +19,7 @@ namespace AsterDock
             dock = owner;
             Title = "Light Dock · 设置"; Width = 480; Height = 720; MinHeight = 500;
             WindowStartupLocation = WindowStartupLocation.CenterScreen; Background = new SolidColorBrush(Color.FromRgb(16, 22, 35));
-            Foreground = Ink; FontFamily = new FontFamily("Microsoft YaHei UI"); FontSize = 13; Topmost = true;
+            Foreground = Ink; FontFamily = new FontFamily("Microsoft YaHei UI"); FontSize = 13; Topmost = false;
             UseLayoutRounding = true;
             Loaded += delegate { FitToDisplay(Displays.ForWindow(dock.Handle), true); };
             SourceInitialized += delegate { HwndSource.FromHwnd(new WindowInteropHelper(this).Handle).AddHook(DisplayMessage); };
@@ -28,13 +28,27 @@ namespace AsterDock
             body.Children.Add(new TextBlock { Text = "LIGHT / DOCK", Foreground = new SolidColorBrush(Color.FromRgb(133, 200, 255)), FontSize = 12 });
             body.Children.Add(new TextBlock { Text = "让桌面，轻一点。", FontSize = 27, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 8) });
             Note("所有更改即时生效，自动保存。将常用应用留在触手可及的位置。");
+            Note("Light Dock v0.2.0-beta.4 · 轻雾玻璃悬停卡片");
             Section("外观");
             Note("浅色毛玻璃 · 建议不透明度 20%–35%，可透出壁纸的色彩与轮廓。");
             Check("模糊背后的桌面（毛玻璃）", dock.Config.BlurBackground, delegate(bool v) { dock.Config.BlurBackground = v; });
             Slider("背板不透明度（越低越通透）", .05, 1, dock.Config.BackgroundOpacity, delegate(double v) { dock.Config.BackgroundOpacity = v; }, delegate(double v) { return (v * 100).ToString("0") + "%"; });
             Note("圆角：跟随 Windows 11 系统。背板与毛玻璃统一裁剪，避免边缘残影。");
             Slider("图标大小（随系统缩放）", 28, 72, dock.Config.IconSize, delegate(double v) { dock.Config.IconSize = v; }, delegate(double v) { return v.ToString("0"); });
+            Note("鼠标移到图标上时，图标会放大。1.00 × 表示不放大，数值越大效果越明显。");
             Slider("悬停放大", 1, 2, dock.Config.Magnification, delegate(double v) { dock.Config.Magnification = v; }, delegate(double v) { return v.ToString("0.00") + " ×"; });
+            Note("鼠标停留在图标上达到指定时间后，显示名称和路径；时间越短，提示出现越快。");
+            Slider("悬停提示延迟", .5, 2, dock.Config.HoverDelaySeconds, delegate(double v) { dock.Config.HoverDelaySeconds = v; }, delegate(double v) { return v.ToString("0.0") + " 秒"; });
+            Section("启动");
+            Note("开启后，登录当前 Windows 账户时自动启动此版本的 Light Dock。移动程序后需重新开启。");
+            var startup = new CheckBox { Content="登录 Windows 时启动 Light Dock", Foreground=Ink, Margin=new Thickness(0,0,0,12) };
+            try { startup.IsChecked=StartupRegistration.Enabled; }
+            catch(Exception ex) { startup.IsEnabled=false; Note("无法读取开机启动设置："+ex.Message); }
+            startup.Click+=delegate {
+                try { StartupRegistration.Set(startup.IsChecked==true); }
+                catch(Exception ex) { MessageBox.Show("无法修改开机启动设置："+ex.Message,"Light Dock"); try { startup.IsChecked=StartupRegistration.Enabled; } catch { startup.IsChecked=false; } }
+            };
+            body.Children.Add(startup);
             Section("布局");
             Check("自由拖拽（关闭后回到顶部居中）", dock.Config.Movable, delegate(bool v) { dock.Config.Movable = v; });
             Note("分组试验版采用横向布局，一级菜单最多 12 个图标。");
@@ -94,7 +108,7 @@ namespace AsterDock
             DockPanel labels = new DockPanel();
             TextBlock number = new TextBlock { Text = format(value), Foreground = Muted, HorizontalAlignment = HorizontalAlignment.Right };
             DockPanel.SetDock(number, Dock.Right); labels.Children.Add(number); labels.Children.Add(new TextBlock { Text = label }); body.Children.Add(labels);
-            Slider slider = new Slider { IsSnapToTickEnabled = label == "二级菜单最大可见行数", TickFrequency = 1, Minimum = min, Maximum = max, Value = value, Margin = new Thickness(0, 8, 0, 15) };
+            Slider slider = new Slider { IsSnapToTickEnabled = label == "二级菜单最大可见行数" || label == "悬停提示延迟", TickFrequency = label == "悬停提示延迟" ? .1 : 1, SmallChange = label == "悬停提示延迟" ? .1 : 1, LargeChange = label == "悬停提示延迟" ? .1 : 1, Minimum = min, Maximum = max, Value = value, Margin = new Thickness(0, 8, 0, 15) };
             slider.ValueChanged += delegate { update(slider.Value); number.Text = format(slider.Value); dock.Apply(); }; body.Children.Add(slider);
         }
     }

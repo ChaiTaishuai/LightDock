@@ -13,6 +13,7 @@ namespace AsterDock
         public static int Main(string[] args)
         {
             Trace("Start, argument count=" + args.Length);
+            if (args.Length > 0 && args[0] == "--hover-card-test") return HoverCardTests.Run();
             if (args.Length > 0 && args[0] == "--self-test") return Tests.Run();
             if (args.Length > 0 && args[0] == "--verify-recovery") return Tests.VerifyRecovery();
             if (args.Length > 1 && args[0] == "--guard")
@@ -33,6 +34,7 @@ namespace AsterDock
                 try { owned = mutex.WaitOne(0); } catch (AbandonedMutexException) { owned = true; }
                 if (!owned) {
                     if (args.Length > 0 && (args[0] == "--recycle-refresh-test" || args[0] == "--projection-test" || args[0] == "--recycle-test" || args[0] == "--recycle-data-test" || args[0] == "--groups-test" || args[0] == "--window-test" || args[0] == "--glass-preview" || args[0] == "--recovery-fixture")) return 2;
+                    if (args.Length > 0 && args[0] == "--autostart") return 0;
                     MessageBox.Show("请先退出正在运行的稳定版或试验版 Dock，再启动分组试验版。两个版本不能同时接管桌面。", "Light Dock 分组试验版");
                     return 2;
 
