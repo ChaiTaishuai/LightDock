@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
@@ -22,7 +22,7 @@ namespace AsterDock
             if (Groups == null) Groups = new List<DockGroup>();
             Groups.RemoveAll(g => g == null || string.IsNullOrEmpty(g.Id) || g.Id == "_");
             var ids = new HashSet<string>(); Groups.RemoveAll(g => !ids.Add(g.Id));
-            foreach(var g in Groups) if(string.IsNullOrWhiteSpace(g.Name)) g.Name = "新分组";
+            foreach(var g in Groups) if(string.IsNullOrWhiteSpace(g.Name)) g.Name = UiText.T("新分组");
             int primary = 0;
             foreach(var item in Items)
             {

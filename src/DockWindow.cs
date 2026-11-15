@@ -38,7 +38,7 @@ namespace AsterDock
         private DockItem draggedItem;
         private bool itemDragging;
         private bool dragged, cleaned;
-        internal string HotkeyLabel = "快捷键不可用，请使用托盘菜单";
+        internal string HotkeyLabel = UiText.T("快捷键不可用，请使用托盘菜单");
         internal DockState CurrentState { get { return state; } }
         internal IntPtr Handle { get { return hwnd; } }
         internal bool GlassAvailable { get; private set; }
@@ -52,9 +52,9 @@ namespace AsterDock
 
         internal DockWindow(Settings config)
         {
-            Config = config; Config.Normalize();
+            Config = config; Config.Normalize(); UiText.Mode=Config.LanguageMode;
             desktopItems = new DesktopIconProjection(Dispatcher);
-            Title = "Light Dock · 分组试验版"; WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
+            Title = UiText.T("Light Dock · 分组试验版"); WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
             // Use a DWM glass surface, not a WS_EX_LAYERED bitmap: layered WPF windows
             // can accept an accent policy while silently suppressing its backdrop blur.
             AllowsTransparency = false; Background = Brushes.Transparent; ShowInTaskbar = false;
@@ -104,7 +104,7 @@ namespace AsterDock
                 StartRecycleNotifications();
                 desktopGesture = new DesktopGesture(Dispatcher, ToggleHidden);
                 if (Native.RegisterHotKey(hwnd, 1, 0x4003, 0x20)) HotkeyLabel = "Ctrl + Alt + Space";
-                else if (Native.RegisterHotKey(hwnd, 1, 0x4003, 0x44)) HotkeyLabel = "Ctrl + Alt + D（备用快捷键）";
+                else if (Native.RegisterHotKey(hwnd, 1, 0x4003, 0x44)) HotkeyLabel = UiText.T("Ctrl + Alt + D（备用快捷键）");
             };
             Loaded += delegate { Place(); Native.ShowWindowAsync(hwnd, 4); Native.PlaceAtDesktop(hwnd); UpdateDesktop(); desktopItems.Update(Config.Items); Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(ApplyGlass)); };
             SizeChanged += delegate { QueueDisplayRefresh(); };
@@ -148,30 +148,30 @@ namespace AsterDock
         }
         private void CreateTray()
         {
-            tray = new Forms.NotifyIcon(); tray.Text = "Light Dock · 双击打开设置";
+            tray = new Forms.NotifyIcon(); tray.Text = UiText.T("Light Dock · 双击打开设置");
             tray.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Process.GetCurrentProcess().MainModule.FileName) ?? System.Drawing.SystemIcons.Application;
             Forms.ContextMenuStrip menu = new Forms.ContextMenuStrip();
-            menu.Items.Add("显示 Dock", null, delegate { SetState(DockState.Visible); });
-            menu.Items.Add("隐藏 Dock、桌面图标与任务栏", null, delegate { SetState(DockState.Hidden); });
-            menu.Items.Add("临时呼出 / 收回", null, delegate { TogglePeek(); });
-            menu.Items.Add("设置…", null, delegate { OpenSettings(); });
-            menu.Items.Add("退出并恢复桌面", null, delegate { Close(); });
+            menu.Items.Add(UiText.T("显示 Dock"), null, delegate { SetState(DockState.Visible); });
+            menu.Items.Add(UiText.T("隐藏 Dock、桌面图标与任务栏"), null, delegate { SetState(DockState.Hidden); });
+            menu.Items.Add(UiText.T("临时呼出 / 收回"), null, delegate { TogglePeek(); });
+            menu.Items.Add(UiText.T("设置…"), null, delegate { OpenSettings(); });
+            menu.Items.Add(UiText.T("退出并恢复桌面"), null, delegate { Close(); });
             tray.ContextMenuStrip = menu; tray.DoubleClick += delegate { OpenSettings(); }; tray.Visible = true;
         }
         private ContextMenu BuildMenu()
         {
             ContextMenu menu = new ContextMenu();
-            AddMenu(menu, "添加应用或文件…", PickFiles);
-            AddMenu(menu, "添加回收站", delegate { AddPaths(new string[] { ShellDrop.RecycleBin }); });
-            AddMenu(menu, "添加文件夹…", delegate { using (Forms.FolderBrowserDialog picker = new Forms.FolderBrowserDialog()) { if (picker.ShowDialog() == Forms.DialogResult.OK) AddPaths(new string[] { picker.SelectedPath }); } });
-            AddMenu(menu, "导入桌面快捷方式", ImportDesktop);
-            AddMenu(menu, "新建分组…", delegate { EditGroup(null); });
+            AddMenu(menu, UiText.T("添加应用或文件…"), PickFiles);
+            AddMenu(menu, UiText.T("添加回收站"), delegate { AddPaths(new string[] { ShellDrop.RecycleBin }); });
+            AddMenu(menu, UiText.T("添加文件夹…"), delegate { using (Forms.FolderBrowserDialog picker = new Forms.FolderBrowserDialog()) { if (picker.ShowDialog() == Forms.DialogResult.OK) AddPaths(new string[] { picker.SelectedPath }); } });
+            AddMenu(menu, UiText.T("导入桌面快捷方式"), ImportDesktop);
+            AddMenu(menu, UiText.T("新建分组…"), delegate { EditGroup(null); });
             menu.Items.Add(new Separator());
-            AddMenu(menu, "设置外观与布局…", OpenSettings);
-            AddMenu(menu, "回到顶部居中", delegate { Config.Movable = false; Config.HasRelativePosition = false; Config.X = Config.Y = double.NaN; Apply(); });
-            AddMenu(menu, "隐藏 / 恢复", ToggleHidden);
+            AddMenu(menu, UiText.T("设置外观与布局…"), OpenSettings);
+            AddMenu(menu, UiText.T("回到顶部居中"), delegate { Config.Movable = false; Config.HasRelativePosition = false; Config.X = Config.Y = double.NaN; Apply(); });
+            AddMenu(menu, UiText.T("隐藏 / 恢复"), ToggleHidden);
             menu.Items.Add(new Separator());
-            AddMenu(menu, "退出并恢复桌面", Close);
+            AddMenu(menu, UiText.T("退出并恢复桌面"), Close);
             return menu;
         }
         private static void AddMenu(ContextMenu menu, string text, Action action)
@@ -188,7 +188,7 @@ namespace AsterDock
         private void WarnShell(string message)
         {
             if(shellWarning==message) return; shellWarning=message;
-            if(tray!=null) tray.ShowBalloonTip(6000,"Light Dock · 桌面同步未完成",message,Forms.ToolTipIcon.Warning);
+            if(tray!=null) tray.ShowBalloonTip(6000,UiText.T("Light Dock · 桌面同步未完成"),message,Forms.ToolTipIcon.Warning);
         }
         private void ApplyGlass()
         {
@@ -209,7 +209,7 @@ namespace AsterDock
             }
         }
         internal void Save()
-        { try { Config.Save(); } catch (Exception ex) { MessageBox.Show("无法保存设置：" + ex.Message, "Light Dock"); } }
+        { try { Config.Save(); } catch (Exception ex) { MessageBox.Show(UiText.T("无法保存设置：") + ex.Message, "Light Dock"); } }
 
         private void Render()
         {
@@ -237,12 +237,12 @@ namespace AsterDock
                 face.RenderTransformOrigin = new Point(.5, .5); face.RenderTransform = new ScaleTransform(1, 1);
                 tile.Child = face; tiles.Add(tile); scales[tile] = 1;
                 ContextMenu itemMenu = new ContextMenu(); DockItem captured = item;
-                AddMenu(itemMenu, "打开 " + item.Name, delegate { Launch(captured); });
-                AddMenu(itemMenu, "向前移动", delegate { MoveItem(captured, -1); });
-                AddMenu(itemMenu, "向后移动", delegate { MoveItem(captured, 1); });
-                AddMenu(itemMenu, "从 Dock 移除并恢复桌面图标", delegate { Config.Items.Remove(captured); Apply(); });
-                AddMenu(itemMenu, "新建分组…", delegate { EditGroup(null); });
-                AddMenu(itemMenu, "Dock 设置…", OpenSettings);
+                AddMenu(itemMenu, UiText.T("打开 ") + item.Name, delegate { Launch(captured); });
+                AddMenu(itemMenu, UiText.T("向前移动"), delegate { MoveItem(captured, -1); });
+                AddMenu(itemMenu, UiText.T("向后移动"), delegate { MoveItem(captured, 1); });
+                AddMenu(itemMenu, UiText.T("从 Dock 移除并恢复桌面图标"), delegate { Config.Items.Remove(captured); Apply(); });
+                AddMenu(itemMenu, UiText.T("新建分组…"), delegate { EditGroup(null); });
+                AddMenu(itemMenu, UiText.T("Dock 设置…"), OpenSettings);
                 tile.ContextMenu = itemMenu; GroupPanel(item.GroupId).Children.Add(tile);
             }
             FinishGroups(items, extent);
@@ -408,13 +408,13 @@ namespace AsterDock
         private void Launch(DockItem item)
         {
             try { Process.Start(ShellDrop.IsRecycleBin(item.Target) ? new ProcessStartInfo("explorer.exe", "shell:" + ShellDrop.RecycleBin) { UseShellExecute = true } : new ProcessStartInfo(item.Target) { UseShellExecute = true }); if (state == DockState.Peek) SetState(DockState.Hidden); }
-            catch (Exception ex) { MessageBox.Show("无法打开「" + item.Name + "」\n" + ex.Message, "Light Dock"); }
+            catch (Exception ex) { MessageBox.Show(UiText.T("无法打开「") + item.Name + "」\n" + ex.Message, "Light Dock"); }
         }
         private void MoveItem(DockItem item, int delta)
         { int index = Config.Items.IndexOf(item); int next = index + delta; if (next < 0 || next >= Config.Items.Count) return; Config.Items.RemoveAt(index); Config.Items.Insert(next, item); Apply(); }
         private void PickFiles()
         {
-            Microsoft.Win32.OpenFileDialog picker = new Microsoft.Win32.OpenFileDialog { Title = "添加应用、快捷方式或文件", Multiselect = true, Filter = "所有文件|*.*", CheckFileExists = true };
+            Microsoft.Win32.OpenFileDialog picker = new Microsoft.Win32.OpenFileDialog { Title = UiText.T("添加应用、快捷方式或文件"), Multiselect = true, Filter = UiText.T("所有文件|*.*"), CheckFileExists = true };
             if (picker.ShowDialog(this) == true) AddPaths(picker.FileNames);
         }
         private void AddPaths(string[] paths) { AddPaths(paths, null); }
@@ -425,7 +425,7 @@ namespace AsterDock
             {
                 if (!ShellDrop.IsRecycleBin(path) && !File.Exists(path) && !Directory.Exists(path)) continue;
                 if (Config.Items.Exists(delegate(DockItem i) { return string.Equals(i.Target, path, StringComparison.OrdinalIgnoreCase); })) continue;
-                DockItem added = new DockItem(ShellDrop.IsRecycleBin(path) ? "回收站" : Path.GetFileNameWithoutExtension(path), path);
+                DockItem added = new DockItem(ShellDrop.IsRecycleBin(path) ? UiText.T("回收站") : Path.GetFileNameWithoutExtension(path), path);
                 Config.AddGroupedItem(added, group);
                 if (before != null && before.GroupId == added.GroupId) Config.Transfer(added, added.GroupId, before);
             }
@@ -435,6 +435,14 @@ namespace AsterDock
         {
             foreach (string folder in new string[] { Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory) })
                 if (Directory.Exists(folder)) AddPaths(Directory.GetFiles(folder, "*.lnk"));
+        }
+        internal void ChangeLanguage(string mode) {
+            Config.LanguageMode=mode; UiText.Mode=mode;
+            HideHoverCard();
+            if(tray!=null) { tray.Visible=false;tray.Dispose(); }
+            CreateTray(); ContextMenu=BuildMenu(); Apply();
+            if(settings!=null) settings.Close();
+            OpenSettings();
         }
         internal void OpenSettings()
         {

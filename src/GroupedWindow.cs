@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -31,7 +31,7 @@ namespace AsterDock
             groupExtent = Config.IconSize * Config.Magnification + 22;
             secondaryContent = new StackPanel();
             MakeGroup("", null);
-            MakeGroup("_", "未分组");
+            MakeGroup("_", UiText.T("未分组"));
             foreach(var group in Config.Groups) MakeGroup(group.Id, group.Name);
         }
         private void MakeGroup(string id,string name)
@@ -49,11 +49,11 @@ namespace AsterDock
             groupBoxes[id] = box;
             if(id != "") secondaryContent.Children.Add(box);
             ContextMenu menu = new ContextMenu();
-            AddMenu(menu,"新建分组…",delegate { EditGroup(null); });
+            AddMenu(menu,UiText.T("新建分组…"),delegate { EditGroup(null); });
             if(id != "" && id != "_")
             {
-                AddMenu(menu,"重命名分组…",delegate { EditGroup(Config.Groups.Find(g => g.Id == id)); });
-                AddMenu(menu,"删除分组（图标移至未分组）",delegate { Config.DeleteGroup(id); Apply(); });
+                AddMenu(menu,UiText.T("重命名分组…"),delegate { EditGroup(Config.Groups.Find(g => g.Id == id)); });
+                AddMenu(menu,UiText.T("删除分组（图标移至未分组）"),delegate { Config.DeleteGroup(id); Apply(); });
             }
             box.ContextMenu = menu;
         }
@@ -63,7 +63,7 @@ namespace AsterDock
             Grid top = new Grid();
             top.ColumnDefinitions.Add(new ColumnDefinition()); top.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
             top.Children.Add(groupBoxes[""]);
-            expander = new Button { Content = expanded ? "▴" : "▾", Width = 26, Height = 30, FontSize = 17, Background = Brushes.Transparent, BorderThickness = new Thickness(0), ToolTip = "展开 / 收起分组", Focusable = false };
+            expander = new Button { Content = expanded ? "▴" : "▾", Width = 26, Height = 30, FontSize = 17, Background = Brushes.Transparent, BorderThickness = new Thickness(0), ToolTip = UiText.T("展开 / 收起分组"), Focusable = false };
             Grid.SetColumn(expander,1); top.Children.Add(expander);
             expander.Click += delegate { expanded = !expanded; ResizeGroups(true); };
             secondaryScroll = new ScrollViewer { Content = secondaryContent, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, CanContentScroll = false };
@@ -212,10 +212,10 @@ namespace AsterDock
         }
         private void EditGroup(DockGroup group)
         {
-            Window dialog=new Window { Title=group==null ? "新建分组" : "重命名分组", Width=340,Height=155,ResizeMode=ResizeMode.NoResize,WindowStartupLocation=WindowStartupLocation.CenterScreen };
+            Window dialog=new Window { Title=group==null ? UiText.T("新建分组") : UiText.T("重命名分组"), Width=340,Height=155,ResizeMode=ResizeMode.NoResize,WindowStartupLocation=WindowStartupLocation.CenterScreen };
             StackPanel body=new StackPanel { Margin=new Thickness(18) };
             TextBox name=new TextBox { Text=group==null ? "" : group.Name, MaxLength=40,Margin=new Thickness(0,0,0,12) };
-            Button ok=new Button { Content="确定",IsDefault=true,Padding=new Thickness(12,5,12,5) };
+            Button ok=new Button { Content=UiText.T("确定"),IsDefault=true,Padding=new Thickness(12,5,12,5) };
             ok.Click+=delegate { if(string.IsNullOrWhiteSpace(name.Text)) { name.Focus(); return; } dialog.DialogResult=true; };
             body.Children.Add(name); body.Children.Add(ok); dialog.Content=body; dialog.Loaded+=delegate { name.Focus(); name.SelectAll(); };
             if(dialog.ShowDialog()!=true) return;

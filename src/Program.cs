@@ -13,6 +13,7 @@ namespace AsterDock
         public static int Main(string[] args)
         {
             Trace("Start, argument count=" + args.Length);
+
             if (args.Length > 0 && args[0] == "--hover-card-test") return HoverCardTests.Run();
             if (args.Length > 0 && args[0] == "--self-test") return Tests.Run();
             if (args.Length > 0 && args[0] == "--verify-recovery") return Tests.VerifyRecovery();
@@ -33,9 +34,10 @@ namespace AsterDock
                 bool owned;
                 try { owned = mutex.WaitOne(0); } catch (AbandonedMutexException) { owned = true; }
                 if (!owned) {
+                    if(args.Length>0 && args[0]=="--english-window-test") return 2;
                     if (args.Length > 0 && (args[0] == "--recycle-refresh-test" || args[0] == "--projection-test" || args[0] == "--recycle-test" || args[0] == "--recycle-data-test" || args[0] == "--groups-test" || args[0] == "--window-test" || args[0] == "--glass-preview" || args[0] == "--recovery-fixture")) return 2;
                     if (args.Length > 0 && args[0] == "--autostart") return 0;
-                    MessageBox.Show("请先退出正在运行的稳定版或试验版 Dock，再启动分组试验版。两个版本不能同时接管桌面。", "Light Dock 分组试验版");
+                    MessageBox.Show(UiText.T("请先退出正在运行的稳定版或试验版 Dock，再启动分组试验版。两个版本不能同时接管桌面。"), UiText.T("Light Dock 分组试验版"));
                     return 2;
 
                 }
@@ -54,16 +56,18 @@ namespace AsterDock
                     if (args.Length > 0 && args[0] == "--groups-test") return GroupTests.Run();
                     if (args.Length > 0 && args[0] == "--recycle-data-test") return RecycleTests.Run();
                     if (args.Length > 0 && args[0] == "--recycle-test") return Tests.RunWindowTest(true);
+            if(args.Length>0 && args[0]=="--english-window-test") { UiText.Mode="en"; return Tests.RunWindowTest(); }
                     if (args.Length > 0 && args[0] == "--window-test") return Tests.RunWindowTest();
                     if (args.Length > 0 && args[0] == "--recovery-fixture") return Tests.RunRecoveryFixture();
                     if (args.Length > 0 && args[0] == "--glass-preview") return Tests.RunGlassPreview();
                     Trace("Creating application");
                     Application app = new Application(); app.ShutdownMode = ShutdownMode.OnMainWindowClose;
                     app.DispatcherUnhandledException += delegate(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {
-                        MessageBox.Show("Light Dock 遇到错误，将退出并恢复桌面图标。\n" + e.Exception.Message, "Light Dock");
+                        MessageBox.Show(UiText.T("Light Dock 遇到错误，将退出并恢复桌面图标。\n") + e.Exception.Message, "Light Dock");
                         e.Handled = true; app.Shutdown(1);
                     };
-                    DockWindow window = new DockWindow(Settings.Load());
+                    Settings config = Settings.Load(); UiText.Mode=config.LanguageMode;
+                    DockWindow window = new DockWindow(config);
                     Trace("Window constructed");
                     EventWaitHandle openSettings = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\AsterDock.OpenSettings");
                     System.Windows.Threading.DispatcherTimer signals = new System.Windows.Threading.DispatcherTimer();
@@ -73,7 +77,7 @@ namespace AsterDock
                     app.Exit += delegate { window.Cleanup(); };
                     int result = app.Run(window); signals.Stop(); openSettings.Dispose(); Trace("Application exited: " + result); return result;
                 }
-                catch (Exception ex) { ShellRecovery.RecoverAll(); MessageBox.Show(ex.ToString(), "Light Dock 启动失败"); return 1; }
+                catch (Exception ex) { ShellRecovery.RecoverAll(); MessageBox.Show(ex.ToString(), UiText.T("Light Dock 启动失败")); return 1; }
                 finally { mutex.ReleaseMutex(); }
             }
         }

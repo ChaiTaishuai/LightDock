@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -54,7 +54,7 @@ namespace AsterDock
             EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, delegate(IntPtr monitor, IntPtr dc, ref PixelRect r, IntPtr data) {
                 DisplayArea area = Read(monitor); if (area != null) areas.Add(area); return true;
             }, IntPtr.Zero);
-            if (areas.Count == 0) throw new InvalidOperationException("无法读取显示器工作区。");
+            if (areas.Count == 0) throw new InvalidOperationException(UiText.T("无法读取显示器工作区。"));
             return areas;
         }
         internal static DisplayArea Primary { get { List<DisplayArea> all = All(); return all.Find(delegate(DisplayArea a) { return a.Primary; }) ?? all[0]; } }

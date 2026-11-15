@@ -73,8 +73,8 @@ namespace AsterDock
         }
         internal static string DisplayPath(string target)
         {
-            if(ShellDrop.IsRecycleBin(target)) return "Windows 回收站";
-            if(target=="ms-settings:") return "Windows 设置";
+            if(ShellDrop.IsRecycleBin(target)) return UiText.T("Windows 回收站");
+            if(target=="ms-settings:") return UiText.T("Windows 设置");
             return target ?? "";
         }
         internal static string Shorten(string value,double width,Func<string,double> measure)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -52,7 +52,7 @@ namespace AsterDock
                 windows = Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("9BA05972-F6A8-11CF-A442-00A0C90A8F39")));
                 object[] args = { 0, null, 8, 0, 1 }; // desktop, NEEDDISPATCH
                 dispatch = windows.GetType().InvokeMember("FindWindowSW", BindingFlags.InvokeMethod, null, windows, args);
-                if (dispatch == null) throw new InvalidOperationException("桌面 Shell 尚未就绪。");
+                if (dispatch == null) throw new InvalidOperationException(UiText.T("桌面 Shell 尚未就绪。"));
                 Guid service = new Guid("4C96BE40-915C-11CF-99D3-00AA004AE837"), iid = typeof(Browser).GUID;
                 ((Services)dispatch).QueryService(ref service,ref iid,out browser);
                 ((Browser)browser).QueryActiveShellView(out view);

@@ -85,7 +85,7 @@ namespace AsterDock
         {
             string report = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, recycle ? "recycle-window-test-results.txt" : "window-test-results.txt");
             System.Windows.Application app = new System.Windows.Application();
-            Settings s = Settings.Defaults();
+            Settings s = Settings.Defaults(); s.LanguageMode=UiText.Mode;
             DockWindow window = new DockWindow(s);
             // Match production's tool-window style in the integration test.
             window.ShowInTaskbar = false;
@@ -257,6 +257,15 @@ namespace AsterDock
                 var badDelay=Settings.Defaults();badDelay.HoverDelaySeconds=double.NaN;badDelay.Normalize();Check(badDelay.HoverDelaySeconds==1,"Invalid delay defaults safely");
                 badDelay.HoverDelaySeconds=5;badDelay.Normalize();Check(badDelay.HoverDelaySeconds==2,"Delay maximum enforced");
                 badDelay.HoverDelaySeconds=.1;badDelay.Normalize();Check(badDelay.HoverDelaySeconds==.5,"Delay minimum enforced");
+                string previousLanguage=UiText.Mode;
+                foreach(string mode in new string[]{"auto","zh-CN","en"}) {
+                    var languageSettings=Settings.Defaults();languageSettings.LanguageMode=mode;
+                    using(var data=new MemoryStream()) {delaySerializer.Serialize(data,languageSettings);data.Position=0;var restored=(Settings)delaySerializer.Deserialize(data);restored.Normalize();Check(restored.LanguageMode==mode,"Language preference persists");}
+                }
+                UiText.Mode="en";Check(UiText.T("外观")=="Appearance","English labels");
+                Check(UiText.T("my own file.png")=="my own file.png","User text preserved");
+                UiText.Mode="zh-CN";Check(UiText.T("外观")=="外观","Manual Chinese overrides system");
+                UiText.Mode=previousLanguage;
                 TestDisplayGeometry();
                 var entries=ShellDesktop.Read();
                 Check(entries.Count>0,"Shell desktop identities readable without file modification");

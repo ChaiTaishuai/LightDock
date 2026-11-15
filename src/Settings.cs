@@ -16,6 +16,7 @@ namespace AsterDock
 
     public partial class Settings
     {
+        public string LanguageMode = "auto";
         public double Radius = 24;
         public double BackgroundOpacity = .26;
         public bool BlurBackground = true;
@@ -39,15 +40,16 @@ namespace AsterDock
         {
             Settings s = new Settings();
             s.AppearanceVersion = 1;
-            s.Items.Add(new DockItem("文件资源管理器", "explorer.exe"));
-            s.Items.Add(new DockItem("桌面", Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)));
-            s.Items.Add(new DockItem("文档", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)));
-            s.Items.Add(new DockItem("记事本", "notepad.exe"));
-            s.Items.Add(new DockItem("系统设置", "ms-settings:"));
+            s.Items.Add(new DockItem(UiText.T("文件资源管理器"), "explorer.exe"));
+            s.Items.Add(new DockItem(UiText.T("桌面"), Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory)));
+            s.Items.Add(new DockItem(UiText.T("文档"), Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)));
+            s.Items.Add(new DockItem(UiText.T("记事本"), "notepad.exe"));
+            s.Items.Add(new DockItem(UiText.T("系统设置"), "ms-settings:"));
             return s;
         }
         public void Normalize()
         {
+            if(LanguageMode!="en" && LanguageMode!="zh-CN") LanguageMode="auto";
             Radius = Clamp(Radius, 0, 60, 24);
             BackgroundOpacity = Clamp(BackgroundOpacity, .05, 1, .26);
             HoverDelaySeconds = Math.Round(Clamp(HoverDelaySeconds, .5, 2, 1)*10, MidpointRounding.AwayFromZero)/10;
@@ -79,7 +81,7 @@ namespace AsterDock
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("配置无法读取，将使用默认设置。原文件将保留为 settings.invalid.xml。\n" + ex.Message, "Light Dock");
+                System.Windows.MessageBox.Show(UiText.T("配置无法读取，将使用默认设置。原文件将保留为 settings.invalid.xml。\n") + ex.Message, "Light Dock");
                 if (File.Exists(FilePath)) File.Copy(FilePath, Path.Combine(Folder, "settings.invalid.xml"), true);
                 return Defaults();
             }

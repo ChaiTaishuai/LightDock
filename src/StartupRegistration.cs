@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using Microsoft.Win32;
 namespace AsterDock
@@ -14,7 +14,7 @@ namespace AsterDock
         internal static void Set(bool enabled)
         {
             using(var key=Registry.CurrentUser.CreateSubKey(KeyPath)) {
-                if(key==null) throw new InvalidOperationException("无法打开当前用户的启动设置。");
+                if(key==null) throw new InvalidOperationException(UiText.T("无法打开当前用户的启动设置。"));
                 if(enabled) key.SetValue(Name,Command,RegistryValueKind.String);
                 else if(string.Equals(key.GetValue(Name) as string,Command,StringComparison.OrdinalIgnoreCase)) key.DeleteValue(Name,false);
             }

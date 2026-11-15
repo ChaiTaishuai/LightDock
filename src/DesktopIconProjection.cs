@@ -37,9 +37,9 @@ namespace AsterDock
         internal static byte[] Bytes(IntPtr region)
         {
             uint size = GetRegionData(region,0,null);
-            if (size == 0) throw new InvalidOperationException("无法读取桌面显示区域。");
+            if (size == 0) throw new InvalidOperationException(UiText.T("无法读取桌面显示区域。"));
             byte[] data = new byte[size];
-            if (GetRegionData(region,size,data) == 0) throw new InvalidOperationException("无法读取桌面显示区域。");
+            if (GetRegionData(region,size,data) == 0) throw new InvalidOperationException(UiText.T("无法读取桌面显示区域。"));
             return data;
         }
         internal static IntPtr FromBytes(byte[] data) { return data == null ? IntPtr.Zero : ExtCreateRegion(IntPtr.Zero,(uint)data.Length,data); }
@@ -56,22 +56,22 @@ namespace AsterDock
         internal static void Apply(IntPtr window,byte[] data)
         {
             IntPtr region = FromBytes(data);
-            if (data != null && region == IntPtr.Zero) throw new InvalidOperationException("无法建立桌面显示区域。");
-            if (SetWindowRgn(window,region,true) == 0) { if (region != IntPtr.Zero) DeleteObject(region); throw new InvalidOperationException("无法更新桌面显示区域。"); }
+            if (data != null && region == IntPtr.Zero) throw new InvalidOperationException(UiText.T("无法建立桌面显示区域。"));
+            if (SetWindowRgn(window,region,true) == 0) { if (region != IntPtr.Zero) DeleteObject(region); throw new InvalidOperationException(UiText.T("无法更新桌面显示区域。")); }
             RedrawWindow(window,IntPtr.Zero,IntPtr.Zero,0x185); // invalidate, erase, all children, update now
             // On success USER owns the region.
         }
         internal static byte[] Exclude(IntPtr window,byte[] original,List<Rect> holes)
         {
-            Rect bounds; if (!GetWindowRect(window,out bounds)) throw new InvalidOperationException("桌面窗口已失效。");
+            Rect bounds; if (!GetWindowRect(window,out bounds)) throw new InvalidOperationException(UiText.T("桌面窗口已失效。"));
             IntPtr region = original == null ? CreateRectRgn(0,0,bounds.Right-bounds.Left,bounds.Bottom-bounds.Top) : FromBytes(original);
-            if (region == IntPtr.Zero) throw new InvalidOperationException("无法建立桌面显示区域。");
+            if (region == IntPtr.Zero) throw new InvalidOperationException(UiText.T("无法建立桌面显示区域。"));
             try
             {
                 foreach (Rect hole in holes)
                 {
                     IntPtr cut = CreateRectRgn(hole.Left,hole.Top,hole.Right,hole.Bottom);
-                    try { if (CombineRgn(region,region,cut,4)==0) throw new InvalidOperationException("无法收纳桌面图标。"); }
+                    try { if (CombineRgn(region,region,cut,4)==0) throw new InvalidOperationException(UiText.T("无法收纳桌面图标。")); }
                     finally { DeleteObject(cut); }
                 }
                 return Bytes(region);
@@ -84,11 +84,11 @@ namespace AsterDock
             if (indices.Count == 0) return result;
             uint pid; ShellRecovery.GetWindowThreadProcessId(list,out pid);
             IntPtr process = OpenProcess(0x38,false,pid), memory = IntPtr.Zero;
-            if (process == IntPtr.Zero) throw new InvalidOperationException("无法读取桌面图标边界。");
+            if (process == IntPtr.Zero) throw new InvalidOperationException(UiText.T("无法读取桌面图标边界。"));
             try
             {
                 memory = VirtualAllocEx(process,IntPtr.Zero,(UIntPtr)16,0x3000,4);
-                if (memory == IntPtr.Zero) throw new InvalidOperationException("无法读取桌面图标边界。");
+                if (memory == IntPtr.Zero) throw new InvalidOperationException(UiText.T("无法读取桌面图标边界。"));
                 Rect window; GetWindowRect(list,out window);
                 System.Drawing.Point client = new System.Drawing.Point(); ClientToScreen(list,ref client);
                 foreach (int index in indices)
@@ -99,7 +99,7 @@ namespace AsterDock
                     if (!WriteProcessMemory(process,memory,buffer,(UIntPtr)16,out count) || count.ToUInt64()!=16 ||
                         SendMessageTimeout(list,0x100E,new IntPtr(index),memory,0x22,150,out answer)==IntPtr.Zero || answer==IntPtr.Zero ||
                         !ReadProcessMemory(process,memory,buffer,(UIntPtr)16,out count) || count.ToUInt64()!=16)
-                        throw new InvalidOperationException("桌面正在刷新，暂缓收纳图标。");
+                        throw new InvalidOperationException(UiText.T("桌面正在刷新，暂缓收纳图标。"));
                     int dx=client.X-window.Left,dy=client.Y-window.Top;
                     result.Add(new Rect { Left=BitConverter.ToInt32(buffer,0)+dx,Top=BitConverter.ToInt32(buffer,4)+dy,Right=BitConverter.ToInt32(buffer,8)+dx,Bottom=BitConverter.ToInt32(buffer,12)+dy });
                 }
