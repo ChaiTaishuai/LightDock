@@ -28,7 +28,7 @@ namespace AsterDock
             body.Children.Add(new TextBlock { Text = "LIGHT / DOCK", Foreground = new SolidColorBrush(Color.FromRgb(133, 200, 255)), FontSize = 12 });
             body.Children.Add(new TextBlock { Text = UiText.T("让桌面，轻一点。"), FontSize = 27, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 8) });
             Note(UiText.T("所有更改即时生效，自动保存。将常用应用留在触手可及的位置。"));
-            Note(UiText.T("Light Dock v0.3.0-beta.1 · 双语支持"));
+            Note(UiText.T("Light Dock v0.3.0 · 双语支持"));
             Section("语言 / Language");
             var language=new ComboBox { Margin=new Thickness(0,0,0,12) };
             language.Items.Add("跟随系统 / System default"); language.Items.Add("简体中文"); language.Items.Add("English");
@@ -57,7 +57,7 @@ namespace AsterDock
             body.Children.Add(startup);
             Section(UiText.T("布局"));
             Check(UiText.T("自由拖拽（关闭后回到顶部居中）"), dock.Config.Movable, delegate(bool v) { dock.Config.Movable = v; });
-            Note(UiText.T("分组试验版采用横向布局，一级菜单最多 12 个图标。"));
+            Note(UiText.T("Dock 采用横向分组布局，一级菜单最多 12 个图标。"));
             Slider(UiText.T("二级菜单最大可见行数"), 2, 8, dock.Config.VisibleRows, delegate(double v) { dock.Config.VisibleRows = (int)Math.Round(v); }, delegate(double v) { return Math.Round(v).ToString() + UiText.T(" 行"); });
             Note(UiText.T("开启自由拖拽后，按住图标之间的背板移动 Dock。将来自桌面的图标拖到桌面空白处，可将其移出 Dock 并恢复原位置。图标过多时，滚动鼠标滚轮浏览。"));
             Section(UiText.T("桌面与呼出"));

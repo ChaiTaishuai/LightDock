@@ -1,8 +1,49 @@
-# Light Dock v0.3.0-beta.1
+# Light Dock v0.3.0
 
-中文英文切换 / Chinese and English localization
+[English](README.en.md) | 简体中文
 
-此包来自当前保留的历史源码快照，已重新编译；不含个人设置。先退出其他版本，完整解压后运行 bin/LightDock.exe。运行要求：Windows x64 和 .NET Framework 4.8。未签名；跨电脑及混合 DPI 尚未完成验收。内部产品版本：0.3.0-beta.1。旧版本不包含后续所有修复，建议日常使用 0.3.0。
+当前主线：**v0.3.0，未签名 Windows x64 版本**。程序入口 `dist/LightDock.exe`。下载请访问 [GitHub Releases](https://github.com/ChaiTaishuai/LightDock/releases)。
 
-Built from the preserved source snapshot. Compilation passed; interactive acceptance tests were not rerun. No personal settings are included. Exit other versions, extract the whole archive and run bin/LightDock.exe. Requires Windows x64 and .NET Framework 4.8. Unsigned; cross-PC and mixed-DPI validation remains pending. Embedded product version: 0.3.0-beta.1. Older versions lack later fixes; 0.3.0 is recommended for daily use.
+## 使用
+
+Windows 11 x64，或 Windows 10 1607 及以上 x64 且已安装 .NET Framework 4.8。Windows 11 原生圆角及毛玻璃效果在 Windows 10 上可能不同；非本机系统尚未实机验收。
+
+完整解压发布 ZIP 到当前用户可写、路径固定的位置，例如“文档/LightDock”，然后运行 `bin/LightDock.exe`。不要只从 ZIP 内打开 EXE，也不要只复制 EXE；保留其配置文件和目录结构。首次运行使用默认布局，不携带开发者的桌面路径。设置保存在程序上一级的 `data` 文件夹；源码工作区为 `data/settings.xml`，发布包亦为 `data/settings.xml`。勿放在需要管理员权限才能写入的位置。
+
+## 功能
+
+- 顶部图标栏、悬停放大、浅色毛玻璃和系统圆角，普通窗口可覆盖 Dock。
+- 一级最多 12 个图标；二级分组、组内滚动、拖拽插入与跨组移动。
+- 文件、文件夹、快捷方式、图片预览和回收站；回收站通过 Shell 事件刷新状态图标。
+- 双击桌面空白处隐藏或恢复 Dock、桌面图标和任务栏；快捷键临时呼出。
+- 收纳图标保留原文件及位置；移出或退出时恢复，异常终止由守护进程尝试恢复。
+- 毛玻璃悬停卡片、名称与路径分层；延迟 0.5–2 秒，步长 0.1 秒，默认 1 秒。
+- 设置中可选择跟随系统、简体中文或 English。文件名和自定义分组名保留原样。
+- Per-Monitor V2 DPI 布局；自由拖动位置；分组布局采用横向。
+
+## 开机自启
+
+设置 → 启动 → “登录 Windows 时启动 Light Dock”。默认关闭，仅登记当前账户。登录时等待 Explorer 桌面就绪，已有 Dock 运行时不再启动第二个实例。Windows 可以延迟执行自启。
+
+移动程序目录、切换版本后，需在新位置重新开启。若在 Windows 的启动应用设置中禁用了 Light Dock，还需在那里重新启用。卸载前关闭自启并通过托盘退出，再删除解压目录；删除 `data` 会清除个人设置。
+
+## 安全与签名
+
+此构建 **未进行 Authenticode 签名**，不是“已认证无病毒”版本。没有为发布包添加杀毒排除或防火墙放行规则。SHA-256 校验值用于比对发布文件，不等同于可信发布者签名。本地测试不代表所有 Windows 版本与杀毒产品的通过认证。
+
+## 版本与回退
+
+- 主线源码：`src`；构建：`build.ps1`。
+- 原 v0.1.0 主线源码保存在 Git 历史及对应版本标签。
+- 各 beta 版本通过对应版本标签与 Releases 获取；运行前先退出当前版本。
+- 本地可沿用 beta 的配置副本，正式 ZIP 不含个人数据。
+
+## 验证和构建
+
+运行 `./build.ps1`。测试结果写入 `dist`，发布包仅包含程序、运行配置、说明及校验值，不包含测试报告、日志或个人配置。`./package-release.ps1` 生成明确标记为 unsigned 的 ZIP。
+
+本机已完成配置/布局、英文窗口、分组、回收站事件及桌面恢复回归。实际注销登录、不同实体分辨率显示器、其他电脑和多款杀毒软件尚未验收。
+
+旧 `docs` 中的开发分析保留为历史资料；当前运行方式以本 README 为准。
+
 

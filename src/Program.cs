@@ -37,7 +37,7 @@ namespace AsterDock
                     if(args.Length>0 && args[0]=="--english-window-test") return 2;
                     if (args.Length > 0 && (args[0] == "--recycle-refresh-test" || args[0] == "--projection-test" || args[0] == "--recycle-test" || args[0] == "--recycle-data-test" || args[0] == "--groups-test" || args[0] == "--window-test" || args[0] == "--glass-preview" || args[0] == "--recovery-fixture")) return 2;
                     if (args.Length > 0 && args[0] == "--autostart") return 0;
-                    MessageBox.Show(UiText.T("请先退出正在运行的稳定版或试验版 Dock，再启动分组试验版。两个版本不能同时接管桌面。"), UiText.T("Light Dock 分组试验版"));
+                    MessageBox.Show(UiText.T("请先退出正在运行的其他版本，再启动 Light Dock。两个版本不能同时接管桌面。"), UiText.T("Light Dock"));
                     return 2;
 
                 }
@@ -60,6 +60,10 @@ namespace AsterDock
                     if (args.Length > 0 && args[0] == "--window-test") return Tests.RunWindowTest();
                     if (args.Length > 0 && args[0] == "--recovery-fixture") return Tests.RunRecoveryFixture();
                     if (args.Length > 0 && args[0] == "--glass-preview") return Tests.RunGlassPreview();
+                    // Explorer may still be starting when Windows processes the Run key.
+                    if(args.Length>0 && args[0]=="--autostart") {
+                        for(int attempt=0;attempt<40 && Native.DesktopLists().Count==0;attempt++) Thread.Sleep(500);
+                    }
                     Trace("Creating application");
                     Application app = new Application(); app.ShutdownMode = ShutdownMode.OnMainWindowClose;
                     app.DispatcherUnhandledException += delegate(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e) {

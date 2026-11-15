@@ -15,7 +15,10 @@ namespace AsterDock
         {
             using(var key=Registry.CurrentUser.CreateSubKey(KeyPath)) {
                 if(key==null) throw new InvalidOperationException(UiText.T("无法打开当前用户的启动设置。"));
-                if(enabled) key.SetValue(Name,Command,RegistryValueKind.String);
+                if(enabled) {
+                    if(Command.Length>260) throw new InvalidOperationException("The application path is too long for Windows startup. Move Light Dock to a shorter path.");
+                    key.SetValue(Name,Command,RegistryValueKind.String);
+                }
                 else if(string.Equals(key.GetValue(Name) as string,Command,StringComparison.OrdinalIgnoreCase)) key.DeleteValue(Name,false);
             }
         }

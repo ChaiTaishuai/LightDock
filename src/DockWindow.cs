@@ -54,7 +54,7 @@ namespace AsterDock
         {
             Config = config; Config.Normalize(); UiText.Mode=Config.LanguageMode;
             desktopItems = new DesktopIconProjection(Dispatcher);
-            Title = UiText.T("Light Dock · 分组试验版"); WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
+            Title = UiText.T("Light Dock"); WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
             // Use a DWM glass surface, not a WS_EX_LAYERED bitmap: layered WPF windows
             // can accept an accent policy while silently suppressing its backdrop blur.
             AllowsTransparency = false; Background = Brushes.Transparent; ShowInTaskbar = false;
