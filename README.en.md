@@ -10,6 +10,18 @@ A crowded desktop makes familiar files harder to find; putting every shortcut in
 
 [Download latest](https://github.com/ChaiTaishuai/LightDock/releases/latest) · [All releases](https://github.com/ChaiTaishuai/LightDock/releases)
 
+## Product demos
+
+Real interaction keyframes captured from an isolated 0.3.0 demo window. Window hosting was adjusted for recording and desktop takeover disabled; the mainline executable was not changed. These GIFs show step-by-step outcomes, not continuous video.
+
+|Demo | How it works|
+|---|---|
+| ![Expand and collapse](docs/media/expand-collapse.gif) | **Expand and collapse**<br>Click the triangle to show or hide secondary groups while keeping favorites visible. |
+| ![Drag between groups](docs/media/drag-between-groups.gif) | **Drag between groups**<br>Drag an icon into another group. Here Calculator moves from the primary row into Work Files. |
+| ![Scroll secondary groups](docs/media/scroll-groups.gif) | **Scroll secondary groups**<br>Scroll inside the secondary area to reach items below the visible region. |
+| ![Create a group](docs/media/create-group.gif) | **Create a group**<br>Right-click the secondary background, choose New group, enter a name and confirm. |
+| ![Move the Dock](docs/media/move-dock.gif) | **Move the Dock**<br>With free movement enabled, drag an empty part of the background to reposition the entire Dock. |
+
 ## Features
 
 - Up to 12 top-level icons, expandable groups, scrolling and drag-and-drop ordering.

@@ -15,6 +15,18 @@ Light Dock 是一款面向 Windows 的轻量桌面图标栏。它把常用程序
 
 [下载最新版](https://github.com/ChaiTaishuai/LightDock/releases/latest) · [全部版本](https://github.com/ChaiTaishuai/LightDock/releases)
 
+## 产品演示
+
+以下 GIF 是独立 0.3.0 演示窗口中真实操作的关键帧回放，并非连续视频。为便于录制，仅调整了演示副本的窗口承载方式并关闭桌面接管；主线程序未修改。
+
+|动态图 | 操作说明|
+|---|---|
+| ![展开与收起](docs/media/expand-collapse.gif) | **展开与收起**<br>点击右侧三角，在常用的一级入口和包含更多资料的二级区域之间切换。 |
+| ![图标拖拽与跨组移动](docs/media/drag-between-groups.gif) | **图标拖拽与跨组移动**<br>按住图标拖到目标分组；演示将计算器从一级移入工作资料，一级随之减少一项。 |
+| ![二级菜单滚动](docs/media/scroll-groups.gif) | **二级菜单滚动**<br>将鼠标移到二级区域滚动，浏览超出可见高度的项目。 |
+| ![创建分组](docs/media/create-group.gif) | **创建分组**<br>右键二级空白处，选择“新建分组”，输入名称并确认；演示新增“灵感收藏”。 |
+| ![调整 Dock 位置](docs/media/move-dock.gif) | **调整 Dock 位置**<br>开启自由移动后，按住图标之间或二级区域的空白背板拖动，即可调整整条 Dock 的位置。 |
+
 ## 使用
 
 Windows 11 x64，或 Windows 10 1607 及以上 x64 且已安装 .NET Framework 4.8。Windows 11 原生圆角及毛玻璃效果在 Windows 10 上可能不同；非本机系统尚未实机验收。
